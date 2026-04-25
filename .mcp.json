@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "tollgate": {
+      "command": "node",
+      "args": ["./mcp/tollgate-mcp/dist/index.js"],
+      "env": {
+        "AGENT_NWC_URL": "${AGENT_NWC_URL}",
+        "TOLLGATE_POLICY_PATH": "${TOLLGATE_POLICY_PATH:-}",
+        "TOLLGATE_DATA_DIR": "${TOLLGATE_DATA_DIR:-}"
+      }
+    }
+  }
+}
