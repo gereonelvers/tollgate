@@ -39,7 +39,8 @@ export default function Page() {
           [<>Bind the L402 token to <InlineCode>action_id</InlineCode> + canonical input hash.</>, "MUST"],
           [<>Reject reused (consumed) tokens with 401.</>, "MUST"],
           [<>Sign every receipt with the manifest&apos;s declared service key.</>, "MUST"],
-          [<>Emit receipts using canonical JSON for the signed payload.</>, "MUST"],
+          [<>Emit receipts using canonical JSON for the signed payload (alphabetical key order, absent optionals omitted).</>, "MUST"],
+          [<>Accept and persist <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode> when supplied; include in the canonical receipt.</>, "SHOULD"],
           [<>Return 425 (not 402) when payment is in flight but not yet confirmed.</>, "SHOULD"],
           [<>Refund unconfirmed payments after the token expiry passes.</>, "SHOULD"],
         ]}
@@ -57,6 +58,7 @@ export default function Page() {
           [<>Surface <InlineCode>policy_needs_human_approval</InlineCode> to the user before proceeding.</>, "MUST"],
           [<>Cache manifests with respect to <InlineCode>Cache-Control</InlineCode>.</>, "SHOULD"],
           [<>Persist receipts long enough to feed the agent&apos;s local reputation system.</>, "SHOULD"],
+          [<>For reputation-tier conformance: send <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode> on every paid request and verify Nostr feedback events end-to-end (Nostr sig + receipt sig + buyer match) before counting.</>, "SHOULD"],
         ]}
       />
 
@@ -83,13 +85,30 @@ npx agents402 conform https://example.com --version 0.1`}
 
       <H2 id="badge">Compliance badge</H2>
       <P>
-        Publishers that pass the harness MAY display the agents402 badge:
+        Publishers and agents that pass the relevant harness checks MAY display
+        the agents402 badge tier they qualify for:
       </P>
-      <UL>
-        <LI><InlineCode>agents402-compliant</InlineCode> — manifest + paid action loop.</LI>
-        <LI><InlineCode>agents402-receipts</InlineCode> — adds Ed25519 receipt signing.</LI>
-        <LI><InlineCode>agents402-reputation</InlineCode> — adds buyer-feedback support.</LI>
-      </UL>
+      <Table
+        headers={["Tier", "Requirements"]}
+        rows={[
+          [
+            <InlineCode key="b1">agents402-compliant</InlineCode>,
+            "Manifest + 402-challenge + retry-with-proof loop. The minimum bar.",
+          ],
+          [
+            <InlineCode key="b2">agents402-receipts</InlineCode>,
+            "Above + Ed25519-signed receipts in canonical-form for downstream verification.",
+          ],
+          [
+            <InlineCode key="b3">agents402-reputation</InlineCode>,
+            <span key="b3d">
+              Above + accepts the optional <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode>{" "}
+              header and includes the supplied pubkey in the receipt&apos;s canonical
+              fields. Required to enable verifiable Nostr feedback events from buyers.
+            </span>,
+          ],
+        ]}
+      />
       <P>
         Badges are claims, not credentials. Anyone may display them; agents
         verify by running the harness themselves.

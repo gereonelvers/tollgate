@@ -59,7 +59,11 @@ export default function Page() {
   ],
   "blocked_domains":             [],
   "trusted_domains":             [],
-  "new_service_max_msats":       2000
+  "new_service_max_msats":       2000,
+
+  // Decentralized reputation gates (see /concepts/reputation).
+  "min_network_reputation":      0.0,
+  "min_reputation_sample_size":  0
 }`}
       </CodeBlock>
 
@@ -73,6 +77,12 @@ export default function Page() {
         <LI>
           Is this an unknown service (no prior receipts) and is the price above{" "}
           <InlineCode>new_service_max_msats</InlineCode>? Refuse.
+        </LI>
+        <LI>
+          If a network reputation score is available with{" "}
+          <InlineCode>sample_size ≥ min_reputation_sample_size</InlineCode> and the
+          score is below <InlineCode>min_network_reputation</InlineCode>, and the
+          domain is not in <InlineCode>trusted_domains</InlineCode>: refuse.
         </LI>
         <LI>
           Is the price above <InlineCode>require_confirm_above_msats</InlineCode>{" "}

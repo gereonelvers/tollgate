@@ -21,6 +21,7 @@ export function getDb() {
       completed_at TEXT NOT NULL,
       service_pubkey TEXT NOT NULL,
       signature TEXT NOT NULL,
+      buyer_pubkey TEXT,
       created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_receipts_created_at ON receipts(created_at DESC);
@@ -35,6 +36,13 @@ export function getDb() {
       consumed INTEGER NOT NULL DEFAULT 0
     );
   `);
+  // Migration: add buyer_pubkey if upgrading from a pre-Nostr-feedback DB.
+  const cols = db
+    .prepare(`PRAGMA table_info(receipts)`)
+    .all() as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === "buyer_pubkey")) {
+    db.exec(`ALTER TABLE receipts ADD COLUMN buyer_pubkey TEXT;`);
+  }
   return db;
 }
 
@@ -48,13 +56,18 @@ export function insertReceipt(r: {
   completed_at: string;
   service_pubkey: string;
   signature: string;
+  buyer_pubkey?: string;
 }) {
   getDb()
     .prepare(
-      `INSERT INTO receipts (receipt_id, action_id, amount_msats, payment_hash, input_hash, output_hash, completed_at, service_pubkey, signature, created_at)
-       VALUES (@receipt_id, @action_id, @amount_msats, @payment_hash, @input_hash, @output_hash, @completed_at, @service_pubkey, @signature, @created_at)`,
+      `INSERT INTO receipts (receipt_id, action_id, amount_msats, payment_hash, input_hash, output_hash, completed_at, service_pubkey, signature, buyer_pubkey, created_at)
+       VALUES (@receipt_id, @action_id, @amount_msats, @payment_hash, @input_hash, @output_hash, @completed_at, @service_pubkey, @signature, @buyer_pubkey, @created_at)`,
     )
-    .run({ ...r, created_at: Date.now() });
+    .run({
+      buyer_pubkey: null,
+      ...r,
+      created_at: Date.now(),
+    });
 }
 
 export function listRecentReceipts(limit = 50) {
@@ -72,6 +85,7 @@ export function listRecentReceipts(limit = 50) {
     completed_at: string;
     service_pubkey: string;
     signature: string;
+    buyer_pubkey: string | null;
     created_at: number;
   }>;
 }

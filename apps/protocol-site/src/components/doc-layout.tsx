@@ -16,6 +16,7 @@ const NAV_GROUPS: Array<{ title: string; items: Array<{ href: string; label: str
       { href: "/concepts/manifest", label: "Manifest" },
       { href: "/concepts/actions", label: "Actions" },
       { href: "/concepts/receipts", label: "Receipts" },
+      { href: "/concepts/reputation", label: "Reputation" },
       { href: "/concepts/trust", label: "Trust model" },
     ],
   },
@@ -25,6 +26,7 @@ const NAV_GROUPS: Array<{ title: string; items: Array<{ href: string; label: str
       { href: "/spec/manifest", label: "manifest.json" },
       { href: "/spec/wire", label: "Wire format" },
       { href: "/spec/receipts", label: "Receipt format" },
+      { href: "/spec/feedback", label: "Feedback events" },
     ],
   },
   {

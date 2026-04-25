@@ -30,9 +30,46 @@ export function getServiceKeys() {
   return cached;
 }
 
-export function signReceipt(payload: object): string {
+/**
+ * Canonical core fields of a receipt, used for signing AND for downstream
+ * verification (e.g. by Nostr feedback aggregators).
+ *
+ * Fixed alphabetical key order; absent optional fields (buyer_pubkey) are
+ * omitted entirely so old receipts and new receipts can be verified by the
+ * same routine.
+ */
+export type ReceiptCore = {
+  action_id: string;
+  amount_msats: number;
+  buyer_pubkey?: string;
+  completed_at: string;
+  input_hash: string;
+  output_hash: string;
+  payment_hash: string;
+  receipt_id: string;
+  service_pubkey: string;
+};
+
+const CORE_KEYS: (keyof ReceiptCore)[] = [
+  "action_id",
+  "amount_msats",
+  "buyer_pubkey",
+  "completed_at",
+  "input_hash",
+  "output_hash",
+  "payment_hash",
+  "receipt_id",
+  "service_pubkey",
+];
+
+export function canonicalReceiptCore(r: ReceiptCore): string {
+  const present = CORE_KEYS.filter((k) => r[k] !== undefined);
+  return JSON.stringify(r, present);
+}
+
+export function signReceipt(core: ReceiptCore): string {
   const { privateKey } = getServiceKeys();
-  const msg = Buffer.from(JSON.stringify(payload));
+  const msg = Buffer.from(canonicalReceiptCore(core));
   const sig = crypto.sign(null, msg, privateKey);
   return sig.toString("hex");
 }

@@ -4,9 +4,30 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { fetchManifest, domainOf, manifestUrlFor, ManifestAction } from "./manifest-client.js";
 import { evaluate, loadPolicy } from "./policy.js";
-import { isKnownService, recordReceipt, spendSummary, todaysSpendMsats } from "./db.js";
+import {
+  isKnownService,
+  recordReceipt,
+  spendSummary,
+  todaysSpendMsats,
+  getStoredReceipt,
+  recordFeedbackPublished,
+  getCachedReputation,
+  putCachedReputation,
+} from "./db.js";
 import { parseChallengeFromResponse, buildAuthorizationHeader } from "./l402-client.js";
 import { payInvoice, getBalance } from "./wallet.js";
+import {
+  getAgentNostrKey,
+  buildFeedbackTemplate,
+  signEvent,
+  publishToRelays,
+  fetchFeedbackEvents,
+  verifyFeedbackEvent,
+  aggregateReputation,
+  getRelays,
+  closePool,
+  type Receipt,
+} from "./nostr.js";
 
 const server = new McpServer({ name: "tollgate", version: "0.1.0" });
 
@@ -14,16 +35,20 @@ const log = (...args: unknown[]) => {
   process.stderr.write(args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") + "\n");
 };
 
-// ------------------------------------------------------------------
-// discover
-// ------------------------------------------------------------------
+/* ------------------------------------------------------------------ */
+/* discover                                                            */
+/* ------------------------------------------------------------------ */
 server.tool(
   "discover",
-  "Look up a Tollgate manifest for a URL or domain. Returns the list of paid actions a site offers, with prices and risk levels. Call this BEFORE pay_and_invoke whenever you encounter a new site or want to see what's available.",
+  "Look up a Tollgate manifest for a URL or domain. Returns the list of paid actions a site offers, with prices, risk levels, and decentralized network reputation if available. Call this BEFORE pay_and_invoke whenever you encounter a new site or want to see what's available.",
   {
     url: z.string().describe("A URL or domain (e.g. example.com or https://example.com/article)."),
+    fetch_network_reputation: z
+      .boolean()
+      .default(true)
+      .describe("If true, query Nostr relays for the site's reputation (cached 5 minutes). Disable for repeated lookups."),
   },
-  async ({ url }) => {
+  async ({ url, fetch_network_reputation }) => {
     const manifestUrl = manifestUrlFor(url);
     const manifest = await fetchManifest(url);
     if (!manifest) {
@@ -46,6 +71,31 @@ server.tool(
     }
     const domain = domainOf(url);
     const known = isKnownService(domain);
+    const servicePubkey = manifest.receipts.pubkey_hex;
+
+    let networkReputation: unknown = { available: false };
+    if (fetch_network_reputation) {
+      try {
+        const cached = getCachedReputation(servicePubkey);
+        if (cached) {
+          networkReputation = { available: true, cached: true, ...cached.summary };
+        } else {
+          const events = await fetchFeedbackEvents({ servicePubkeyHex: servicePubkey, timeoutMs: 3500 });
+          const verified = events
+            .map(verifyFeedbackEvent)
+            .filter((v): v is NonNullable<typeof v> => v !== null);
+          const summary = aggregateReputation(verified, {
+            service_pubkey: servicePubkey,
+            domain,
+          });
+          putCachedReputation({ service_pubkey: servicePubkey, domain, summary });
+          networkReputation = { available: true, cached: false, ...summary };
+        }
+      } catch (e: unknown) {
+        networkReputation = { available: false, error: e instanceof Error ? e.message : String(e) };
+      }
+    }
+
     return {
       content: [
         {
@@ -72,7 +122,8 @@ server.tool(
                   ? spendSummary("all").by_domain.find((d) => d.domain === domain)?.count ?? 0
                   : 0,
               },
-              receipts_pubkey: manifest.receipts.pubkey_hex,
+              network_reputation: networkReputation,
+              receipts_pubkey: servicePubkey,
             },
             null,
             2,
@@ -83,12 +134,12 @@ server.tool(
   },
 );
 
-// ------------------------------------------------------------------
-// pay_and_invoke
-// ------------------------------------------------------------------
+/* ------------------------------------------------------------------ */
+/* pay_and_invoke                                                      */
+/* ------------------------------------------------------------------ */
 server.tool(
   "pay_and_invoke",
-  "Atomically: fetch a paid action, pay the L402 challenge under deterministic policy, return the result + receipt. ALWAYS prefer this over any direct fetch. Policy is enforced in code, not via the model — if the call would exceed budget or violate policy, this tool refuses.",
+  "Atomically: fetch a paid action, pay the L402 challenge under deterministic policy, return the result + receipt. ALWAYS prefer this over any direct fetch. Policy is enforced in code, not via the model — if the call would exceed budget, violate policy, or fall below the network-reputation threshold, this tool refuses. The receipt is bound to the agent's Nostr identity so feedback can be published later.",
   {
     url: z
       .string()
@@ -127,6 +178,15 @@ server.tool(
     const domain = domainOf(url);
     const policy = loadPolicy();
     const todaysSpend = todaysSpendMsats();
+
+    // Pull cached network reputation if any (don't block on a fresh fetch in the hot path).
+    let networkRep: { weighted_score: number; sample_size: number } | null = null;
+    const cached = getCachedReputation(manifest.receipts.pubkey_hex);
+    if (cached?.summary && typeof (cached.summary as { weighted_score?: number }).weighted_score === "number") {
+      const s = cached.summary as { weighted_score: number; sample_size: number };
+      if (Number.isFinite(s.weighted_score)) networkRep = s;
+    }
+
     const decision = evaluate({
       policy,
       action_type: action.type,
@@ -134,6 +194,7 @@ server.tool(
       domain,
       todays_spend_msats: todaysSpend,
       is_known_service: isKnownService(domain),
+      network_reputation: networkRep,
     });
     if (decision.decision !== "allow") {
       return errorResult({
@@ -150,14 +211,19 @@ server.tool(
       });
     }
 
+    // Agent's persistent Nostr identity — allows publishing verifiable feedback later.
+    const agentKey = getAgentNostrKey();
+
     // Step 1: trigger 402 challenge.
     const challengeRes = await fetch(action.endpoint, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "x-tollgate-buyer-pubkey": agentKey.publicKey,
+      },
       body: JSON.stringify(input),
     });
     if (challengeRes.status !== 402) {
-      // Some sites might serve the action free or return an error.
       const text = await challengeRes.text();
       return errorResult({
         error: "expected_402",
@@ -183,6 +249,7 @@ server.tool(
       headers: {
         "content-type": "application/json",
         authorization: authHeader,
+        "x-tollgate-buyer-pubkey": agentKey.publicKey,
       },
       body: JSON.stringify(input),
     });
@@ -198,20 +265,10 @@ server.tool(
     }
     const responseJson = (await finalRes.json()) as {
       output: unknown;
-      receipt: {
-        receipt_id: string;
-        action_id: string;
-        amount_msats: number;
-        payment_hash: string;
-        input_hash: string;
-        output_hash: string;
-        completed_at: string;
-        service_pubkey: string;
-        signature: string;
-      };
+      receipt: Receipt;
     };
 
-    // Step 4: store receipt locally.
+    // Step 4: store receipt locally (with full receipt JSON for later feedback publish).
     recordReceipt({
       receipt_id: responseJson.receipt.receipt_id,
       domain,
@@ -224,6 +281,8 @@ server.tool(
       service_pubkey: responseJson.receipt.service_pubkey,
       service_signature: responseJson.receipt.signature,
       completed_at: responseJson.receipt.completed_at,
+      buyer_pubkey: responseJson.receipt.buyer_pubkey ?? agentKey.publicKey,
+      receipt_json: JSON.stringify(responseJson.receipt),
     });
 
     log(`paid ${action.price_msats} msats to ${domain}/${action_id} → receipt ${responseJson.receipt.receipt_id}`);
@@ -244,6 +303,8 @@ server.tool(
               policy_decision: decision,
               output: responseJson.output,
               receipt: responseJson.receipt,
+              feedback_hint:
+                "After using this output, call publish_feedback({ receipt_id, score }) to add a verifiable score (0–1) to the network reputation graph for this service. Optional but encouraged.",
             },
             null,
             2,
@@ -254,9 +315,198 @@ server.tool(
   },
 );
 
-// ------------------------------------------------------------------
-// spend_summary
-// ------------------------------------------------------------------
+/* ------------------------------------------------------------------ */
+/* publish_feedback                                                    */
+/* ------------------------------------------------------------------ */
+server.tool(
+  "publish_feedback",
+  "Publish a verifiable Nostr feedback event (kind 30402) rating a paid action you previously made. The score (0-1) is anchored to the receipt the publisher signed and to your agent's Nostr identity, so the network can compute weighted reputation: Σ(amount × score) / Σ(amount). Optional but encouraged after every paid action.",
+  {
+    receipt_id: z.string().describe("The receipt_id from a previous pay_and_invoke. Must reference a receipt in the local store."),
+    score: z
+      .number()
+      .min(0)
+      .max(1)
+      .describe("Quality score, 0 (useless) to 1 (perfectly useful). Higher means you'd pay this service for this action again."),
+    note: z.string().max(280).optional().describe("Optional short freeform note. Public; do not include sensitive data."),
+  },
+  async ({ receipt_id, score, note }) => {
+    const stored = getStoredReceipt(receipt_id);
+    if (!stored) {
+      return errorResult({ error: "receipt_not_found", receipt_id });
+    }
+    if (!stored.receipt_json) {
+      return errorResult({
+        error: "receipt_missing_canonical_form",
+        receipt_id,
+        hint: "This receipt predates Nostr feedback support. Pay for a new action and rate that one.",
+      });
+    }
+    const agentKey = getAgentNostrKey();
+    if (stored.buyer_pubkey && stored.buyer_pubkey !== agentKey.publicKey) {
+      return errorResult({
+        error: "buyer_mismatch",
+        hint: "This receipt was paid for by a different agent identity (perhaps an older one). Only the buyer can publish feedback.",
+        receipt_buyer: stored.buyer_pubkey,
+        agent: agentKey.publicKey,
+      });
+    }
+    let receipt: Receipt;
+    try {
+      receipt = JSON.parse(stored.receipt_json);
+    } catch {
+      return errorResult({ error: "receipt_parse_failed", receipt_id });
+    }
+    if (!receipt.buyer_pubkey) {
+      // Older publisher didn't include buyer_pubkey in the signed core; we can't
+      // produce a verifiable feedback event because verifiers will require it.
+      return errorResult({
+        error: "receipt_missing_buyer_pubkey",
+        hint: "The publisher didn't bind your agent identity into this receipt. Pay for a new action with a publisher that supports x-tollgate-buyer-pubkey.",
+      });
+    }
+
+    const template = buildFeedbackTemplate({
+      receipt,
+      domain: stored.domain,
+      score,
+      note,
+    });
+    const event = signEvent(template, agentKey.secretKey);
+    const { accepted, rejected } = await publishToRelays(event);
+
+    if (accepted.length === 0) {
+      return errorResult({
+        error: "no_relays_accepted",
+        rejected,
+        relays_attempted: getRelays(),
+      });
+    }
+
+    recordFeedbackPublished({
+      receipt_id,
+      domain: stored.domain,
+      service_pubkey: stored.service_pubkey,
+      score,
+      event_id: event.id,
+      relays_accepted: accepted,
+    });
+
+    // Invalidate cached reputation for this service so the new event is included next time.
+    putCachedReputation({
+      service_pubkey: stored.service_pubkey,
+      domain: stored.domain,
+      summary: { invalidated: true },
+    });
+
+    log(`published feedback ${event.id} score=${score} → ${accepted.length}/${accepted.length + rejected.length} relays`);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              status: "published",
+              event_id: event.id,
+              kind: event.kind,
+              receipt_id,
+              service_pubkey: stored.service_pubkey,
+              domain: stored.domain,
+              score,
+              note,
+              relays_accepted: accepted,
+              relays_rejected: rejected,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* get_reputation                                                      */
+/* ------------------------------------------------------------------ */
+server.tool(
+  "get_reputation",
+  "Fetch + verify Nostr feedback events for a service and compute its weighted reputation: Σ(amount_msats × score) / Σ(amount_msats). Validates each event's signature, verifies the embedded receipt, and only counts feedback from agents who actually paid the publisher. Cached 5 minutes.",
+  {
+    url: z
+      .string()
+      .optional()
+      .describe("Site URL or domain — we look up its service_pubkey via the manifest."),
+    service_pubkey: z
+      .string()
+      .optional()
+      .describe("Hex-encoded service public key. If both url and service_pubkey are given, service_pubkey wins."),
+    bypass_cache: z.boolean().default(false),
+  },
+  async ({ url, service_pubkey, bypass_cache }) => {
+    let svcPubkey = service_pubkey;
+    let domain = "";
+    if (url) {
+      const m = await fetchManifest(url);
+      if (m) {
+        svcPubkey ??= m.receipts.pubkey_hex;
+        domain = domainOf(url);
+      }
+    }
+    if (!svcPubkey) {
+      return errorResult({
+        error: "missing_service_pubkey",
+        hint: "Provide either url (we'll fetch the manifest) or service_pubkey directly.",
+      });
+    }
+
+    if (!bypass_cache) {
+      const cached = getCachedReputation(svcPubkey);
+      if (cached && (cached.summary as { invalidated?: boolean }).invalidated !== true) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ cached: true, ...cached.summary }, null, 2),
+            },
+          ],
+        };
+      }
+    }
+
+    const events = await fetchFeedbackEvents({ servicePubkeyHex: svcPubkey, timeoutMs: 5000 });
+    const verified = events
+      .map(verifyFeedbackEvent)
+      .filter((v): v is NonNullable<typeof v> => v !== null);
+    const summary = aggregateReputation(verified, { service_pubkey: svcPubkey, domain });
+    putCachedReputation({ service_pubkey: svcPubkey, domain, summary });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              cached: false,
+              ...summary,
+              relays: getRelays(),
+              raw_event_count: events.length,
+              verified_event_count: verified.length,
+              dropped_count: events.length - verified.length,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* spend_summary                                                       */
+/* ------------------------------------------------------------------ */
 server.tool(
   "spend_summary",
   "Show today's (or this week's) Lightning spend, organized by domain. Useful for the user's audit trail and for the agent to know its remaining budget.",
@@ -283,6 +533,7 @@ server.tool(
         log(`get_balance failed: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
+    const agentKey = getAgentNostrKey();
     return {
       content: [
         {
@@ -298,6 +549,7 @@ server.tool(
               policy_daily_budget_msats: policy.daily_budget_msats,
               remaining_today_msats: remaining,
               wallet_balance_msats: balance_msats,
+              agent_nostr_pubkey: agentKey.publicKey,
             },
             null,
             2,
@@ -318,3 +570,7 @@ function errorResult(payload: object) {
 const transport = new StdioServerTransport();
 await server.connect(transport);
 log("tollgate-mcp ready");
+
+// Graceful shutdown closes Nostr relay connections.
+process.on("SIGINT", () => { closePool(); process.exit(0); });
+process.on("SIGTERM", () => { closePool(); process.exit(0); });

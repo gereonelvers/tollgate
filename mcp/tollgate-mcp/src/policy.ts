@@ -14,6 +14,19 @@ export const PolicySchema = z.object({
   blocked_domains: z.array(z.string()).default([]),
   trusted_domains: z.array(z.string()).default([]),
   new_service_max_msats: z.number().int().nonnegative().default(2_000),
+  // Network reputation thresholds — applied only when reputation data is available.
+  min_network_reputation: z
+    .number()
+    .min(0)
+    .max(1)
+    .default(0)
+    .describe("Reject services whose Nostr-network weighted score is below this. 0 disables the check."),
+  min_reputation_sample_size: z
+    .number()
+    .int()
+    .nonnegative()
+    .default(0)
+    .describe("Below this many feedback events, ignore the network score (treat as no data)."),
 });
 export type Policy = z.infer<typeof PolicySchema>;
 
@@ -50,8 +63,17 @@ export function evaluate(opts: {
   domain: string;
   todays_spend_msats: number;
   is_known_service: boolean;
+  network_reputation?: { weighted_score: number; sample_size: number } | null;
 }): PolicyDecision {
-  const { policy, action_type, amount_msats, domain, todays_spend_msats, is_known_service } = opts;
+  const {
+    policy,
+    action_type,
+    amount_msats,
+    domain,
+    todays_spend_msats,
+    is_known_service,
+    network_reputation,
+  } = opts;
 
   if (policy.blocked_domains.includes(domain)) {
     return { decision: "deny", reason: `domain ${domain} is on the blocklist` };
@@ -78,6 +100,20 @@ export function evaluate(opts: {
     return {
       decision: "deny",
       reason: `service ${domain} has no prior receipts; new_service_max_msats is ${policy.new_service_max_msats}`,
+    };
+  }
+  // Network reputation gate — only fires if we have enough data and the score is below threshold.
+  if (
+    policy.min_network_reputation > 0 &&
+    network_reputation &&
+    network_reputation.sample_size >= policy.min_reputation_sample_size &&
+    Number.isFinite(network_reputation.weighted_score) &&
+    network_reputation.weighted_score < policy.min_network_reputation &&
+    !policy.trusted_domains.includes(domain)
+  ) {
+    return {
+      decision: "deny",
+      reason: `network reputation ${network_reputation.weighted_score.toFixed(2)} (n=${network_reputation.sample_size}) below min_network_reputation ${policy.min_network_reputation}`,
     };
   }
   if (

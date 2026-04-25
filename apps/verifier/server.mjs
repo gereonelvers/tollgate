@@ -293,21 +293,35 @@ const server = http.createServer(async (req, res) => {
       // Evaluate claim.
       const out = evaluateClaim(body.claim);
 
-      // Sign receipt.
+      // Optional buyer pubkey for verifiable Nostr feedback later.
+      const buyerHeader = req.headers["x-tollgate-buyer-pubkey"];
+      const buyer_pubkey =
+        typeof buyerHeader === "string" && /^[0-9a-f]{64}$/i.test(buyerHeader.trim())
+          ? buyerHeader.trim().toLowerCase()
+          : undefined;
+
+      // Sign receipt — fields in alphabetical order, omitting absent optional fields.
       const completedAt = new Date().toISOString();
       const outputText = JSON.stringify(out);
       const outputHash = crypto.createHash("sha256").update(outputText).digest("hex");
+      const CORE_KEYS = [
+        "action_id", "amount_msats", "buyer_pubkey", "completed_at",
+        "input_hash", "output_hash", "payment_hash", "receipt_id", "service_pubkey",
+      ];
       const core = {
-        receipt_id: `rcpt_${nanoid(12)}`,
         action_id: "verify.claim",
         amount_msats: PRICE_MSATS,
-        payment_hash: tokenBody.ph,
+        ...(buyer_pubkey ? { buyer_pubkey } : {}),
+        completed_at: completedAt,
         input_hash: inputHash,
         output_hash: outputHash,
-        completed_at: completedAt,
+        payment_hash: tokenBody.ph,
+        receipt_id: `rcpt_${nanoid(12)}`,
         service_pubkey: SERVICE_PUBKEY_HEX,
       };
-      const sig = crypto.sign(null, Buffer.from(JSON.stringify(core)), serviceKeyPair.privateKey).toString("hex");
+      const present = CORE_KEYS.filter((k) => core[k] !== undefined);
+      const canonical = JSON.stringify(core, present);
+      const sig = crypto.sign(null, Buffer.from(canonical), serviceKeyPair.privateKey).toString("hex");
       const receipt = { ...core, signature: sig };
       receipts.unshift(receipt);
       if (receipts.length > 100) receipts.length = 100;

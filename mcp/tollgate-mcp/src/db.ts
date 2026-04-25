@@ -24,11 +24,40 @@ export function getDb(): Database.Database {
       service_pubkey TEXT NOT NULL,
       service_signature TEXT NOT NULL,
       completed_at TEXT NOT NULL,
+      buyer_pubkey TEXT,
+      receipt_json TEXT,
       created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_recv_domain ON receipts(domain);
     CREATE INDEX IF NOT EXISTS idx_recv_created ON receipts(created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS feedback_published (
+      receipt_id TEXT PRIMARY KEY,
+      domain TEXT NOT NULL,
+      service_pubkey TEXT NOT NULL,
+      score REAL NOT NULL,
+      event_id TEXT NOT NULL,
+      relays_accepted TEXT NOT NULL,
+      published_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS reputation_cache (
+      service_pubkey TEXT PRIMARY KEY,
+      domain TEXT NOT NULL,
+      summary_json TEXT NOT NULL,
+      cached_at INTEGER NOT NULL
+    );
   `);
+  // Migrations for older agent.db files.
+  const cols = db
+    .prepare(`PRAGMA table_info(receipts)`)
+    .all() as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === "buyer_pubkey")) {
+    db.exec(`ALTER TABLE receipts ADD COLUMN buyer_pubkey TEXT;`);
+  }
+  if (!cols.some((c) => c.name === "receipt_json")) {
+    db.exec(`ALTER TABLE receipts ADD COLUMN receipt_json TEXT;`);
+  }
   return db;
 }
 
@@ -44,14 +73,93 @@ export function recordReceipt(r: {
   service_pubkey: string;
   service_signature: string;
   completed_at: string;
+  buyer_pubkey?: string;
+  receipt_json?: string;
 }) {
   getDb()
     .prepare(
       `INSERT OR REPLACE INTO receipts
-       (receipt_id, domain, action_id, amount_msats, payment_hash, preimage, input_json, output_json, service_pubkey, service_signature, completed_at, created_at)
-       VALUES (@receipt_id, @domain, @action_id, @amount_msats, @payment_hash, @preimage, @input_json, @output_json, @service_pubkey, @service_signature, @completed_at, @created_at)`,
+       (receipt_id, domain, action_id, amount_msats, payment_hash, preimage, input_json, output_json, service_pubkey, service_signature, completed_at, buyer_pubkey, receipt_json, created_at)
+       VALUES (@receipt_id, @domain, @action_id, @amount_msats, @payment_hash, @preimage, @input_json, @output_json, @service_pubkey, @service_signature, @completed_at, @buyer_pubkey, @receipt_json, @created_at)`,
     )
-    .run({ ...r, created_at: Date.now() });
+    .run({
+      buyer_pubkey: null,
+      receipt_json: null,
+      ...r,
+      created_at: Date.now(),
+    });
+}
+
+export type StoredReceipt = {
+  receipt_id: string;
+  domain: string;
+  action_id: string;
+  amount_msats: number;
+  payment_hash: string;
+  preimage: string;
+  input_json: string;
+  output_json: string;
+  service_pubkey: string;
+  service_signature: string;
+  completed_at: string;
+  buyer_pubkey: string | null;
+  receipt_json: string | null;
+  created_at: number;
+};
+
+export function getStoredReceipt(receipt_id: string): StoredReceipt | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM receipts WHERE receipt_id = ?`)
+    .get(receipt_id) as StoredReceipt | undefined;
+}
+
+export function recordFeedbackPublished(r: {
+  receipt_id: string;
+  domain: string;
+  service_pubkey: string;
+  score: number;
+  event_id: string;
+  relays_accepted: string[];
+}) {
+  getDb()
+    .prepare(
+      `INSERT OR REPLACE INTO feedback_published
+       (receipt_id, domain, service_pubkey, score, event_id, relays_accepted, published_at)
+       VALUES (@receipt_id, @domain, @service_pubkey, @score, @event_id, @relays_accepted, @published_at)`,
+    )
+    .run({
+      ...r,
+      relays_accepted: JSON.stringify(r.relays_accepted),
+      published_at: Date.now(),
+    });
+}
+
+export function getCachedReputation(service_pubkey: string, ttlMs = 5 * 60 * 1000) {
+  const row = getDb()
+    .prepare(`SELECT * FROM reputation_cache WHERE service_pubkey = ?`)
+    .get(service_pubkey) as
+    | { service_pubkey: string; domain: string; summary_json: string; cached_at: number }
+    | undefined;
+  if (!row) return null;
+  if (Date.now() - row.cached_at > ttlMs) return null;
+  return {
+    cached_at: row.cached_at,
+    summary: JSON.parse(row.summary_json),
+  };
+}
+
+export function putCachedReputation(opts: {
+  service_pubkey: string;
+  domain: string;
+  summary: unknown;
+}) {
+  getDb()
+    .prepare(
+      `INSERT OR REPLACE INTO reputation_cache
+       (service_pubkey, domain, summary_json, cached_at)
+       VALUES (?, ?, ?, ?)`,
+    )
+    .run(opts.service_pubkey, opts.domain, JSON.stringify(opts.summary), Date.now());
 }
 
 export function todaysSpendMsats(): number {

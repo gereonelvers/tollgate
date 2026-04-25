@@ -104,11 +104,31 @@ return { ...core, signature: sig };`}
       </P>
 
       <H2 id="reputation">Receipts → reputation</H2>
+      <P>
+        Receipts power agents402&apos;s decentralized reputation system. When the
+        buyer supplies a Nostr pubkey at payment time (the optional{" "}
+        <InlineCode>buyer_pubkey</InlineCode> field), they can later publish a signed{" "}
+        <a
+          href="/spec/feedback"
+          className="border-b border-zinc-300 text-zinc-950 hover:border-zinc-950 transition"
+        >
+          feedback event
+        </a>{" "}
+        embedding the receipt — provably tying their 0–1 score to a real Lightning
+        payment. See{" "}
+        <a
+          href="/concepts/reputation"
+          className="border-b border-zinc-300 text-zinc-950 hover:border-zinc-950 transition"
+        >
+          /concepts/reputation
+        </a>
+        .
+      </P>
       <Callout variant="note" title="Local-first by design">
-        agents402 does not specify a global reputation graph. Each agent
-        accumulates receipts it has issued or observed, and computes its own
-        trust scoring policy locally. Receipts are the substrate; the graph is
-        an emergent property.
+        agents402 does not require a global reputation graph. Each agent accumulates
+        receipts it has issued or observed, optionally publishes feedback events on
+        Nostr, and computes its own trust scoring policy locally. Receipts are the
+        substrate; the graph is an emergent property of public, signed events.
       </Callout>
       <Table
         headers={["Signal", "What it tells you"]}

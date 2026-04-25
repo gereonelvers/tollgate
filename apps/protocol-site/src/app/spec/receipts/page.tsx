@@ -43,6 +43,8 @@ export default function Page() {
     "receipt_id":     { "type": "string", "pattern": "^rcpt_[A-Za-z0-9_-]+$" },
     "action_id":      { "type": "string" },
     "amount_msats":   { "type": "integer", "minimum": 0 },
+    "buyer_pubkey":   { "type": "string", "pattern": "^[0-9a-f]{64}$",
+                        "description": "Optional. Schnorr-secp256k1 pubkey supplied by the buyer at payment time so they can later publish verifiable feedback events." },
     "payment_hash":   { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "input_hash":     { "type": "string", "pattern": "^[0-9a-f]{64}$" },
     "output_hash":    { "type": "string", "pattern": "^[0-9a-f]{64}$" },
@@ -68,6 +70,21 @@ export default function Page() {
           [
             <InlineCode key="amt">amount_msats</InlineCode>,
             "Amount paid, in millisatoshis. Must equal the price quoted at challenge time.",
+          ],
+          [
+            <InlineCode key="bp">buyer_pubkey</InlineCode>,
+            <span key="bpd">
+              Optional. Schnorr-secp256k1 pubkey the buyer supplied via the{" "}
+              <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode> request header. Required
+              for the receipt to support{" "}
+              <a
+                href="/spec/feedback"
+                className="border-b border-zinc-300 text-zinc-950 hover:border-zinc-950 transition"
+              >
+                verifiable feedback events
+              </a>
+              .
+            </span>,
           ],
           [
             <InlineCode key="ph">payment_hash</InlineCode>,
@@ -98,16 +115,27 @@ export default function Page() {
 
       <H2 id="canonical">Canonical form</H2>
       <P>
-        Canonical JSON for both hashing and signing follows{" "}
+        Receipt signing canonicalizes the core fields in fixed alphabetical key order
+        with absent optional fields (e.g. <InlineCode>buyer_pubkey</InlineCode>) omitted
+        entirely:
+      </P>
+      <CodeBlock lang="text">
+{`order: action_id, amount_msats, buyer_pubkey?, completed_at,
+       input_hash, output_hash, payment_hash, receipt_id, service_pubkey
+
+JSON.stringify(receipt, [<keys present, in the order above>])`}
+      </CodeBlock>
+      <P>
+        This is a deliberate subset of{" "}
         <a
           href="https://www.rfc-editor.org/rfc/rfc8785"
           className="border-b border-zinc-300 text-zinc-950 hover:border-zinc-950 transition"
         >
           RFC 8785 (JCS)
-        </a>
-        : object keys sorted lexicographically, no insignificant whitespace,
-        UTF-8 with strict escaping. Conforming implementations should use a
-        canonicalization library rather than rolling their own.
+        </a>{" "}
+        — no whitespace, fixed key order, UTF-8 — chosen for simplicity over
+        universality. Adding a key to the schema never invalidates older
+        signatures because the present-keys array is computed at sign time.
       </P>
 
       <H2 id="signing">Signing & verifying</H2>

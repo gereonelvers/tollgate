@@ -167,14 +167,22 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
   const { publicKey } = getServiceKeys();
   const completedAt = new Date().toISOString();
   const outputHash = hashOutput(result.output_text_for_hash);
+  // Optional buyer pubkey — agent can hand us a Nostr pubkey it controls so it
+  // can later publish verifiable feedback. Hex-encoded 32-byte schnorr pubkey.
+  const buyerHeader = req.headers.get("x-tollgate-buyer-pubkey");
+  const buyer_pubkey =
+    buyerHeader && /^[0-9a-f]{64}$/i.test(buyerHeader.trim())
+      ? buyerHeader.trim().toLowerCase()
+      : undefined;
   const receiptCore = {
-    receipt_id: `rcpt_${nanoid(12)}`,
     action_id: actionId,
     amount_msats: challenge.amount_msats,
-    payment_hash: tokenBody.ph,
+    ...(buyer_pubkey ? { buyer_pubkey } : {}),
+    completed_at: completedAt,
     input_hash: inputHash,
     output_hash: outputHash,
-    completed_at: completedAt,
+    payment_hash: tokenBody.ph,
+    receipt_id: `rcpt_${nanoid(12)}`,
     service_pubkey: publicKey,
   };
   const signature = signReceipt(receiptCore);
