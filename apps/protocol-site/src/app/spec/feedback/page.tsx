@@ -70,8 +70,14 @@ export default function Page() {
       </CodeBlock>
 
       <H2 id="tags">Tags</H2>
+      <P>
+        Per NIP-01, only single-letter tag names are required to be relay-indexable.
+        agents402 uses three indexable tags (<InlineCode>d</InlineCode>,{" "}
+        <InlineCode>s</InlineCode>, <InlineCode>p</InlineCode>) for fast lookup, plus
+        multi-letter tags for human inspection.
+      </P>
       <Table
-        headers={["Tag", "Required", "Value", "Description"]}
+        headers={["Tag", "Indexable", "Value", "Description"]}
         rows={[
           [
             <InlineCode key="d">d</InlineCode>,
@@ -80,40 +86,46 @@ export default function Page() {
             "The receipt being rated. Combined with pubkey forms the replacement key.",
           ],
           [
-            <InlineCode key="sp">service_pubkey</InlineCode>,
+            <InlineCode key="s">s</InlineCode>,
             "yes",
-            "hex",
-            "Publisher's Ed25519 pubkey from the manifest — used as the primary indexing tag.",
+            "service_pubkey hex",
+            "Primary lookup tag. Aggregators query #s == service_pubkey.",
+          ],
+          [
+            <InlineCode key="p">p</InlineCode>,
+            "yes",
+            "buyer_pubkey hex",
+            "Lets clients query for all ratings published by a given rater.",
           ],
           [
             <InlineCode key="dom">domain</InlineCode>,
-            "yes",
+            "no",
             "string",
             "Publisher's canonical hostname, for human-readable filtering.",
           ],
           [
             <InlineCode key="aid">action_id</InlineCode>,
-            "yes",
+            "no",
             "string",
-            "From receipt; lets aggregators slice scores per action type.",
+            "From receipt; lets aggregators slice scores per action type after retrieval.",
           ],
           [
             <InlineCode key="amt">amount_msats</InlineCode>,
-            "yes",
+            "no",
             "integer string",
             "From receipt. Used as the weight in Σ(amount × score).",
           ],
           [
             <InlineCode key="ph">payment_hash</InlineCode>,
-            "yes",
+            "no",
             "hex",
             "From receipt. Anchors to the underlying Lightning payment.",
           ],
           [
             <InlineCode key="sc">score</InlineCode>,
-            "yes",
+            "no",
             "string, 4-decimal",
-            "Score in tag form for indexing. MUST equal content.score.",
+            "Score in tag form for inspection. MUST equal content.score.",
           ],
         ]}
       />

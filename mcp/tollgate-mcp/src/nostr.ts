@@ -117,8 +117,14 @@ export function buildFeedbackTemplate(opts: {
     kind: FEEDBACK_KIND,
     created_at: Math.floor(Date.now() / 1000),
     tags: [
+      // NIP-01 only indexes single-letter tags. We use:
+      //   d → receipt_id (parameterized-replaceable key)
+      //   s → service_pubkey hex (the queryable identifier for reputation lookups)
+      //   p → buyer_pubkey (so the rater is also indexed for "show me all my ratings")
       ["d", opts.receipt.receipt_id],
-      ["service_pubkey", opts.receipt.service_pubkey],
+      ["s", opts.receipt.service_pubkey],
+      ["p", opts.receipt.buyer_pubkey ?? ""],
+      // Multi-letter tags below are for human inspection only; not indexable.
       ["domain", opts.domain],
       ["action_id", opts.receipt.action_id],
       ["amount_msats", String(opts.receipt.amount_msats)],
@@ -182,7 +188,7 @@ export async function fetchFeedbackEvents(opts: {
   const limit = opts.limit ?? 500;
   const filter = {
     kinds: [FEEDBACK_KIND],
-    "#service_pubkey": [opts.servicePubkeyHex],
+    "#s": [opts.servicePubkeyHex],
     limit,
     ...(opts.sinceUnixSeconds ? { since: opts.sinceUnixSeconds } : {}),
   };
@@ -292,7 +298,7 @@ export function verifyFeedbackEvent(e: Event): VerifiedFeedback | null {
     // Tag/receipt consistency.
     const tagD = e.tags.find((t) => t[0] === "d")?.[1];
     if (tagD !== r.receipt_id) return null;
-    const tagSvc = e.tags.find((t) => t[0] === "service_pubkey")?.[1];
+    const tagSvc = e.tags.find((t) => t[0] === "s")?.[1];
     if (tagSvc !== r.service_pubkey) return null;
     const domain = e.tags.find((t) => t[0] === "domain")?.[1];
     if (!domain) return null;
