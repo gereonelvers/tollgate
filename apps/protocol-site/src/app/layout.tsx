@@ -6,9 +6,9 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "agents402 — paid actions for the agent web",
+  title: "Faregate — paid actions for the agent web",
   description:
-    "agents402 is an open paid-access protocol for AI agents. A manifest at /.well-known/tollgate.json declares what's for sale; agents discover, pay over Lightning, and receive signed receipts.",
+    "Faregate is an open paid-access protocol for AI agents. A manifest at /.well-known/faregate.json declares what's for sale; agents discover, pay over Lightning, and receive signed receipts.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

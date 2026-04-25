@@ -14,7 +14,7 @@ import {
 } from "@/components/doc-layout";
 
 export const metadata = {
-  title: "Introduction · agents402",
+  title: "Introduction · faregate",
 };
 
 const TOC = [
@@ -30,13 +30,13 @@ export default function Page() {
     <DocLayout activePath="/" toc={TOC}>
       <PageHeader
         kicker="Introduction"
-        title="agents402"
+        title="Faregate"
         lead="An open paid-action protocol for AI agents. Sites declare what an agent can buy in a single JSON manifest; agents pay over the Lightning Network under deterministic policy; every paid action ships a signed, portable receipt."
       />
 
       <H2 id="what">What it is</H2>
       <P>
-        agents402 is the small contract between two parties on the agent web: a
+        Faregate is the small contract between two parties on the agent web: a
         site offering machine-readable paid capabilities, and an AI agent
         empowered to buy them. It is a thin layer above the Lightning HTTP{" "}
         <InlineCode>402 Payment Required</InlineCode> standard (L402), shaped
@@ -44,13 +44,13 @@ export default function Page() {
       </P>
       <P>
         The smallest implementation is a static JSON file at{" "}
-        <InlineCode>/.well-known/tollgate.json</InlineCode>, a route handler
+        <InlineCode>/.well-known/faregate.json</InlineCode>, a route handler
         that issues an L402 challenge, and a wallet on either end. Everything
         else — pricing, policy, receipts, reputation — composes from there.
       </P>
 
       <H2 id="shape">The shape of it</H2>
-      <CodeBlock filename="GET https://example.com/.well-known/tollgate.json" lang="json">
+      <CodeBlock filename="GET https://example.com/.well-known/faregate.json" lang="json">
 {`{
   "version": "0.1",
   "service": {
@@ -108,14 +108,14 @@ export default function Page() {
 
       <H2 id="scope">What&apos;s in / out of scope</H2>
       <P>
-        agents402 specifies the wire format for discovery, payment challenge,
+        Faregate specifies the wire format for discovery, payment challenge,
         retry-with-proof, and signed receipts. It does <em>not</em> specify a
         wallet implementation, a reputation graph, or a global registry. Those
         are intentionally separate — wallets are pluggable, reputation is
         local-first, and there is no central authority.
       </P>
       <Callout variant="note" title="Layering">
-        agents402 sits above L402 (Lightning HTTP 402), which sits above
+        Faregate sits above L402 (Lightning HTTP 402), which sits above
         Lightning. On the agent side it is typically consumed via{" "}
         <InlineCode>@modelcontextprotocol</InlineCode> tools that wrap a
         Nostr-Wallet-Connect-controlled wallet.
@@ -125,7 +125,7 @@ export default function Page() {
       <NextLink
         href="/quickstart"
         title="Quickstart"
-        description="Stand up an agents402 publisher and agent in five minutes."
+        description="Stand up a faregate publisher and agent in five minutes."
       />
     </DocLayout>
   );

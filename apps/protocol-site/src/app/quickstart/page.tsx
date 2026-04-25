@@ -11,7 +11,7 @@ import {
   NextLink,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Quickstart · agents402" };
+export const metadata = { title: "Quickstart · faregate" };
 
 const TOC = [
   { id: "step-1", text: "1. Install the publisher middleware" },
@@ -28,12 +28,12 @@ export default function Page() {
       <PageHeader
         kicker="Get started"
         title="Quickstart"
-        lead="Stand up an agents402 publisher and a paying agent in five minutes. The reference implementation uses Next.js, Nostr Wallet Connect, and a Model Context Protocol server."
+        lead="Stand up a faregate publisher and a paying agent in five minutes. The reference implementation uses Next.js, Nostr Wallet Connect, and a Model Context Protocol server."
       />
 
       <H2 id="step-1">1. Install the publisher middleware</H2>
       <CodeBlock filename="terminal" lang="bash">
-{`npm install @agents402/server-next @getalby/sdk zod`}
+{`npm install @faregate/server-next @getalby/sdk zod`}
       </CodeBlock>
       <P>
         The reference Next.js middleware exposes the manifest, signs receipts
@@ -43,11 +43,11 @@ export default function Page() {
 
       <H2 id="step-2">2. Add the manifest</H2>
       <P>
-        Drop a route at <InlineCode>app/.well-known/tollgate.json/route.ts</InlineCode>:
+        Drop a route at <InlineCode>app/.well-known/faregate.json/route.ts</InlineCode>:
       </P>
-      <CodeBlock filename="app/.well-known/tollgate.json/route.ts" lang="ts">
+      <CodeBlock filename="app/.well-known/faregate.json/route.ts" lang="ts">
 {`import { NextResponse } from "next/server";
-import { listActions, getServiceKeys } from "@agents402/server-next";
+import { listActions, getServiceKeys } from "@faregate/server-next";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +69,7 @@ export function GET() {
 
       <H2 id="step-3">3. Wrap an action</H2>
       <CodeBlock filename="app/api/actions/extract.structured/route.ts" lang="ts">
-{`import { withL402 } from "@agents402/server-next";
+{`import { withL402 } from "@faregate/server-next";
 
 export const POST = withL402(
   {
@@ -110,7 +110,7 @@ export const POST = withL402(
 L402_SECRET=any-random-string`}
       </CodeBlock>
       <Callout variant="tip" title="No node operations">
-        agents402 verification is purely cryptographic ({" "}
+        faregate verification is purely cryptographic ({" "}
         <InlineCode>sha256(preimage) == payment_hash</InlineCode>). The
         publisher can confirm a payment without running its own Lightning node
         in the request path — any NWC-compatible wallet provides the few
@@ -136,7 +136,7 @@ L402_SECRET=any-random-string`}
       <CodeBlock filename=".mcp.json" lang="json">
 {`{
   "mcpServers": {
-    "agents402": {
+    "faregate": {
       "command": "node",
       "args":    ["./dist/mcp-server.js"],
       "env":     { "AGENT_NWC_URL": "nostr+walletconnect://…" }
@@ -147,7 +147,7 @@ L402_SECRET=any-random-string`}
 
       <H2 id="verify">Verify with a real payment</H2>
       <CodeBlock filename="terminal" lang="bash">
-{`npx agents402 test https://your-publisher.example`}
+{`npx faregate test https://your-publisher.example`}
       </CodeBlock>
       <P>
         The conformance harness fetches the manifest, triggers a 402, pays from
@@ -158,7 +158,7 @@ L402_SECRET=any-random-string`}
       <NextLink
         href="/concepts/manifest"
         title="The manifest"
-        description="The single JSON file that defines an agents402 publisher."
+        description="The single JSON file that defines a faregate publisher."
       />
     </DocLayout>
   );

@@ -140,7 +140,7 @@ export function Dashboard() {
               {streamLive ? "Stream live" : "Reconnecting"}
             </span>
             <Link
-              href="/.well-known/tollgate.json"
+              href="/.well-known/faregate.json"
               className="font-mono text-[12px] text-[var(--text-3)] hover:text-zinc-950 transition"
             >
               manifest ↗

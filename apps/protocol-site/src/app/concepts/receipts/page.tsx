@@ -12,7 +12,7 @@ import {
   Table,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Receipts · agents402" };
+export const metadata = { title: "Receipts · faregate" };
 
 const TOC = [
   { id: "what", text: "What a receipt is" },
@@ -105,7 +105,7 @@ return { ...core, signature: sig };`}
 
       <H2 id="reputation">Receipts → reputation</H2>
       <Callout variant="note" title="Local-first by design">
-        agents402 does not specify a global reputation graph. Each agent
+        faregate does not specify a global reputation graph. Each agent
         accumulates receipts it has issued or observed, and computes its own
         trust scoring policy locally. Receipts are the substrate; the graph is
         an emergent property.

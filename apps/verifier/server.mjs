@@ -3,7 +3,7 @@
  * Tollgate verifier — a tiny second paid service for agent-to-agent demos.
  *
  * Exposes:
- *   GET  /.well-known/tollgate.json       — manifest (one action)
+ *   GET  /.well-known/faregate.json       — manifest (one action)
  *   POST /api/actions/verify.claim         — L402-protected claim verifier
  *
  * Same wire format as the publisher, deliberately minimal so it's easy to read.
@@ -199,7 +199,7 @@ async function readBody(req) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, BASE);
-    if (req.method === "GET" && url.pathname === "/.well-known/tollgate.json") {
+    if (req.method === "GET" && url.pathname === "/.well-known/faregate.json") {
       return send(res, 200, {
         version: "0.1",
         service: {
@@ -322,7 +322,7 @@ const server = http.createServer(async (req, res) => {
       return send(
         res,
         200,
-        "<!doctype html><meta charset=utf-8><title>Tollgate Verifier</title><body style=\"font-family:ui-monospace,monospace;background:#0a0a0f;color:#fafafa;padding:48px;max-width:720px;margin:auto\"><h1 style=\"color:#fbbf24\">tollgate verifier</h1><p>A second paid service for the agent economy demo. Run by an entity that's not the publisher. Pay 5 sats per <code>verify.claim</code> request.</p><p><a style=\"color:#fbbf24\" href=\"/.well-known/tollgate.json\">manifest</a> · <a style=\"color:#fbbf24\" href=\"/api/receipts\">receipts</a></p></body>",
+        "<!doctype html><meta charset=utf-8><title>Tollgate Verifier</title><body style=\"font-family:ui-monospace,monospace;background:#0a0a0f;color:#fafafa;padding:48px;max-width:720px;margin:auto\"><h1 style=\"color:#fbbf24\">tollgate verifier</h1><p>A second paid service for the agent economy demo. Run by an entity that's not the publisher. Pay 5 sats per <code>verify.claim</code> request.</p><p><a style=\"color:#fbbf24\" href=\"/.well-known/faregate.json\">manifest</a> · <a style=\"color:#fbbf24\" href=\"/api/receipts\">receipts</a></p></body>",
         { "content-type": "text/html; charset=utf-8" },
       );
     }
@@ -334,6 +334,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   process.stdout.write(`tollgate-verifier listening on ${BASE}\n`);
-  process.stdout.write(`  manifest: ${BASE}/.well-known/tollgate.json\n`);
+  process.stdout.write(`  manifest: ${BASE}/.well-known/faregate.json\n`);
   process.stdout.write(`  action:   ${BASE}/api/actions/verify.claim (${PRICE_MSATS} msats)\n`);
 });

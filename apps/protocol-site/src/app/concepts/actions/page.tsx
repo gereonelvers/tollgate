@@ -12,7 +12,7 @@ import {
   Table,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Actions · agents402" };
+export const metadata = { title: "Actions · faregate" };
 
 const TOC = [
   { id: "definition", text: "What an action is" },

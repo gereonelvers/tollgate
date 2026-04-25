@@ -11,7 +11,7 @@ import {
   Table,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Conformance · agents402" };
+export const metadata = { title: "Conformance · faregate" };
 
 const TOC = [
   { id: "publisher", text: "Publisher conformance" },
@@ -26,14 +26,14 @@ export default function Page() {
       <PageHeader
         kicker="Resources"
         title="Conformance"
-        lead="A publisher or agent is agents402-compliant if it satisfies every MUST in this document. Conformance is checked by the open-source harness — no central authority issues badges."
+        lead="A publisher or agent is faregate-compliant if it satisfies every MUST in this document. Conformance is checked by the open-source harness — no central authority issues badges."
       />
 
       <H2 id="publisher">Publisher conformance</H2>
       <Table
         headers={["Requirement", "MUST / SHOULD"]}
         rows={[
-          [<>Serve <InlineCode>/.well-known/tollgate.json</InlineCode> with valid manifest schema.</>, "MUST"],
+          [<>Serve <InlineCode>/.well-known/faregate.json</InlineCode> with valid manifest schema.</>, "MUST"],
           [<>Set <InlineCode>Content-Type: application/json</InlineCode> on the manifest.</>, "MUST"],
           [<>Return 402 with <InlineCode>WWW-Authenticate: L402 …</InlineCode> on unauthenticated POST.</>, "MUST"],
           [<>Bind the L402 token to <InlineCode>action_id</InlineCode> + canonical input hash.</>, "MUST"],
@@ -63,11 +63,11 @@ export default function Page() {
       <H2 id="harness">Conformance harness</H2>
       <P>The reference harness exercises every MUST against a target publisher:</P>
       <CodeBlock filename="terminal" lang="bash">
-{`# verify a publisher is agents402-compliant
-npx agents402 conform https://example.com
+{`# verify a publisher is faregate-compliant
+npx faregate conform https://example.com
 
 # verify against a specific manifest version
-npx agents402 conform https://example.com --version 0.1`}
+npx faregate conform https://example.com --version 0.1`}
       </CodeBlock>
       <P>
         Output is a checklist of pass/fail per requirement. Exit code 0 = full
@@ -76,19 +76,19 @@ npx agents402 conform https://example.com --version 0.1`}
       </P>
 
       <Callout variant="note" title="No registration required">
-        agents402 has no central registry, no authority to grant or revoke
+        faregate has no central registry, no authority to grant or revoke
         compliance, and no fee for participation. The harness is the only
         source of truth, and it is open source.
       </Callout>
 
       <H2 id="badge">Compliance badge</H2>
       <P>
-        Publishers that pass the harness MAY display the agents402 badge:
+        Publishers that pass the harness MAY display the faregate badge:
       </P>
       <UL>
-        <LI><InlineCode>agents402-compliant</InlineCode> — manifest + paid action loop.</LI>
-        <LI><InlineCode>agents402-receipts</InlineCode> — adds Ed25519 receipt signing.</LI>
-        <LI><InlineCode>agents402-reputation</InlineCode> — adds buyer-feedback support.</LI>
+        <LI><InlineCode>faregate-compliant</InlineCode> — manifest + paid action loop.</LI>
+        <LI><InlineCode>faregate-receipts</InlineCode> — adds Ed25519 receipt signing.</LI>
+        <LI><InlineCode>faregate-reputation</InlineCode> — adds buyer-feedback support.</LI>
       </UL>
       <P>
         Badges are claims, not credentials. Anyone may display them; agents

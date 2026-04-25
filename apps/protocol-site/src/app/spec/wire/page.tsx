@@ -12,7 +12,7 @@ import {
   NextLink,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Wire format — Spec · agents402" };
+export const metadata = { title: "Wire format — Spec · faregate" };
 
 const TOC = [
   { id: "challenge", text: "402 challenge" },
