@@ -1,0 +1,104 @@
+# Deploying to Railway
+
+Both marketing sites — **tollgate.dev** (corporate) and **faregate.org**
+(protocol docs) — are static-prerendered Next.js apps. No database, no
+runtime env vars, no secrets. They cost almost nothing to host.
+
+The publisher (`apps/publisher`) and verifier (`apps/verifier`) are runtime
+services with NWC wallets and SQLite — those are deployed separately when
+you're ready to take real Lightning payments. This guide is just the two
+public sites.
+
+## One-time setup
+
+1. Sign in to **railway.com** with your GitHub account.
+2. **New Project** → **Deploy from GitHub repo** → select `gereonelvers/tollgate`.
+3. Railway will offer to deploy the root — **cancel that**, since this is a
+   monorepo. Instead, you'll add two services manually.
+
+## Service 1: tollgate.dev (corporate-site)
+
+In the project, click **+ New** → **GitHub Repo** → pick `gereonelvers/tollgate` again.
+
+**Settings → Source**
+- Root Directory: `apps/corporate-site`
+- Watch Paths: `apps/corporate-site/**`
+
+**Settings → Build**
+- Builder: Nixpacks (default — no change needed)
+- Build Command: leave empty (Railway runs `npm run build` automatically)
+
+**Settings → Deploy**
+- Start Command: leave empty (Railway runs `npm start`, which honors `$PORT`)
+- Healthcheck Path: `/`
+
+**Settings → Networking**
+- Click **Generate Domain** to get a `*.up.railway.app` URL — verify the
+  site loads there before adding a custom domain.
+
+**Custom domain (tollgate.dev):**
+1. Networking → **Custom Domain** → enter `tollgate.dev`.
+2. Railway shows you the DNS records to add at your registrar.
+3. For an apex domain (`tollgate.dev`), you typically add either:
+   - An **ALIAS** or **ANAME** record (if your registrar supports it), or
+   - The A records Railway provides.
+4. For the `www` subdomain (`www.tollgate.dev`), add a CNAME pointing to
+   the Railway domain.
+5. Wait a few minutes for DNS propagation. Railway will auto-issue an
+   HTTPS certificate.
+
+## Service 2: faregate.org (protocol-site)
+
+Repeat the process with these settings:
+
+**Settings → Source**
+- Root Directory: `apps/protocol-site`
+- Watch Paths: `apps/protocol-site/**`
+
+**Custom domain (faregate.org):**
+- Same DNS pattern as above.
+
+## What Railway will do on every push
+
+For each service:
+1. Detect the push to `main` (filtered by Watch Paths so only the relevant
+   service rebuilds).
+2. Run `npm install` in the configured root directory.
+3. Run `npm run build` (Next.js production build).
+4. Run `npm start` — which is `next start -p $PORT` thanks to the script
+   change in this commit.
+5. Route incoming requests at the configured domain to the service.
+
+Build time per site: ~30 s. Cold-start time after deploy: ~1 s.
+
+## Costs
+
+Static-prerendered Next.js on Railway's Hobby plan: typically **<$1/month
+per service** for low-traffic marketing sites. Both sites combined should
+fit comfortably inside Railway's $5 free tier credit.
+
+## Troubleshooting
+
+- **"Application failed to respond"** on first deploy — almost always means
+  the start script isn't binding to `$PORT`. Verify `package.json` has
+  `"start": "next start -p ${PORT:-3020}"` (or 3030 for the protocol site).
+- **Domain shows "no service" on Railway page after DNS update** — check
+  the DNS propagation with `dig tollgate.dev +short` and give it 10
+  minutes. Railway re-checks every minute.
+- **Build fails with "module not found"** — make sure the package-lock.json
+  is committed (check `git ls-tree HEAD apps/corporate-site/package-lock.json`).
+
+## Optional: alternative — host as static export
+
+These sites have zero runtime requirements. You can export to plain HTML and
+host on any static CDN (Cloudflare Pages, Vercel, Netlify) instead of
+running a Node server. Add to `next.config.ts`:
+
+```ts
+export default { output: "export" } satisfies NextConfig;
+```
+
+Then `npm run build` writes static HTML to `out/`. Upload that to any host.
+
+Railway is a fine default — keeps everything in one place and matches
+where the publisher will live too — but it's a choice, not a requirement.
