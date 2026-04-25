@@ -31,7 +31,7 @@ function check(ok, label, detail) {
 }
 
 bigStep(1, `Manifest discovery${MOCK ? " (MOCK MODE)" : ""}`);
-const mres = await fetch(`${BASE}/.well-known/faregate.json`);
+const mres = await fetch(`${BASE}/.well-known/agents402.json`);
 check(mres.ok, "manifest endpoint reachable", `status=${mres.status}`);
 const manifest = await mres.json();
 check(manifest.version === "0.1", "manifest version", manifest.version);

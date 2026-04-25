@@ -8,7 +8,7 @@ import {
   NextLink,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Examples · faregate" };
+export const metadata = { title: "Examples · agents402" };
 
 const TOC = [
   { id: "publisher-next", text: "Publisher (Next.js)" },
@@ -23,7 +23,7 @@ export default function Page() {
       <PageHeader
         kicker="Resources"
         title="Examples"
-        lead="Drop-in reference snippets for the most common faregate implementations. Each example assumes the canonical /.well-known/faregate.json manifest is already in place."
+        lead="Drop-in reference snippets for the most common agents402 implementations. Each example assumes the canonical /.well-known/agents402.json manifest is already in place."
       />
 
       <H2 id="publisher-next">Publisher (Next.js)</H2>
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!auth) {
     const inv = await createInvoice({
       amountMsats: def.price_msats,
-      description: \`faregate:\${id}\`,
+      description: \`agents402:\${id}\`,
     });
     const token = issueL402Token({
       paymentHash: inv.payment_hash,
@@ -89,14 +89,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       <H2 id="publisher-cf">Publisher (Cloudflare Worker)</H2>
       <P>
         Identical logic, edge-deployed. Replace the SQLite calls with a KV or
-        D1 store. The faregate protocol is request-shape-only, so the runtime
+        D1 store. The agents402 protocol is request-shape-only, so the runtime
         is up to you.
       </P>
       <CodeBlock filename="src/index.ts" lang="ts">
 {`export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
-    if (url.pathname === "/.well-known/faregate.json") return manifestResponse(env);
+    if (url.pathname === "/.well-known/agents402.json") return manifestResponse(env);
 
     const match = /^\\/api\\/actions\\/([a-z][a-z0-9_.-]*)$/.exec(url.pathname);
     if (req.method === "POST" && match) {
@@ -122,7 +122,7 @@ import { evaluate, loadPolicy } from "./policy";
 import { payInvoice } from "./wallet";
 import { recordReceipt, todaysSpendMsats, isKnownService } from "./db";
 
-const server = new McpServer({ name: "faregate", version: "0.1.0" });
+const server = new McpServer({ name: "agents402", version: "0.1.0" });
 
 server.tool(
   "pay_and_invoke",
@@ -170,12 +170,12 @@ await server.connect(new StdioServerTransport());`}
 
       <H2 id="agent-cli">Agent (CLI)</H2>
       <P>
-        For non-MCP integrations, the faregate reference CLI does the same
+        For non-MCP integrations, the agents402 reference CLI does the same
         flow as a single command:
       </P>
       <CodeBlock filename="terminal" lang="bash">
 {`AGENT_NWC_URL='nostr+walletconnect://…' \\
-  npx faregate invoke https://example.com extract.structured \\
+  npx agents402 invoke https://example.com extract.structured \\
   --input '{"doc_id":"doc.foo"}' --max-msats 5000`}
       </CodeBlock>
       <P>
@@ -187,7 +187,7 @@ await server.connect(new StdioServerTransport());`}
       <NextLink
         href="/conformance"
         title="Conformance"
-        description="What makes a publisher and agent faregate-compliant."
+        description="What makes a publisher and agent agents402-compliant."
       />
     </DocLayout>
   );

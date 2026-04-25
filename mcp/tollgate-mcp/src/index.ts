@@ -35,7 +35,7 @@ server.tool(
               {
                 supports_tollgate: false,
                 manifest_url: manifestUrl,
-                hint: "Site does not expose /.well-known/faregate.json or it failed to parse.",
+                hint: "Site does not expose /.well-known/agents402.json or it failed to parse.",
               },
               null,
               2,
@@ -112,7 +112,7 @@ server.tool(
       return errorResult({
         error: "manifest_not_found",
         url: manifestUrlFor(url),
-        hint: "This site doesn't expose /.well-known/faregate.json. Cannot pay for actions.",
+        hint: "This site doesn't expose /.well-known/agents402.json. Cannot pay for actions.",
       });
     }
     const action: ManifestAction | undefined = manifest.actions.find((a) => a.id === action_id);

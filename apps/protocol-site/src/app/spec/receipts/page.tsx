@@ -11,7 +11,7 @@ import {
   NextLink,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Receipt format — Spec · faregate" };
+export const metadata = { title: "Receipt format — Spec · agents402" };
 
 const TOC = [
   { id: "schema", text: "JSON schema" },
@@ -26,11 +26,11 @@ export default function Page() {
       <PageHeader
         kicker="Specification"
         title="Receipt format"
-        lead="Wire-level reference for faregate receipts. Receipts are produced by the publisher on a successful paid action and signed with the publisher's service key."
+        lead="Wire-level reference for agents402 receipts. Receipts are produced by the publisher on a successful paid action and signed with the publisher's service key."
       />
 
       <H2 id="schema">JSON schema</H2>
-      <CodeBlock filename="faregate-receipt-v0.1.schema.json" lang="json">
+      <CodeBlock filename="agents402-receipt-v0.1.schema.json" lang="json">
 {`{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type":    "object",

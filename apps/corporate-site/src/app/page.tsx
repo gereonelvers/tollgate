@@ -26,7 +26,7 @@ function Nav() {
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-3 sm:px-10">
         <Link href="/" className="flex items-center gap-3">
           <Mark />
-          <span className="font-semibold tracking-tight text-zinc-950">Tollgate</span>
+          <span className="font-semibold tracking-tight text-zinc-950">Faregate</span>
         </Link>
         <nav className="hidden items-center gap-7 text-sm sm:flex">
           <a href="#how-we-help" className="text-[var(--text-2)] hover:text-zinc-950 transition">
@@ -39,10 +39,10 @@ function Nav() {
             Pricing
           </a>
           <Link
-            href="https://faregate.org"
+            href="https://agents402.org"
             className="font-mono text-[12.5px] text-[var(--text-2)] hover:text-zinc-950 transition"
           >
-            faregate.org ↗
+            agents402.org ↗
           </Link>
         </nav>
         <Link
@@ -71,8 +71,8 @@ function Hero() {
     <section className="border-b hairline">
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
-          <div className="label text-[var(--text-3)]">Tollgate · Implementation partner</div>
-          <div className="label text-[var(--text-4)]">Open protocol · faregate</div>
+          <div className="label text-[var(--text-3)]">Faregate · Implementation partner</div>
+          <div className="label text-[var(--text-4)]">Open protocol · agents402</div>
         </div>
         <div className="grid grid-cols-12 gap-x-8 py-24 sm:py-32">
           <div className="col-span-12 lg:col-span-9">
@@ -86,7 +86,7 @@ function Hero() {
           </div>
           <div className="col-span-12 lg:col-span-3 mt-12 lg:mt-0 flex flex-col justify-end">
             <p className="text-[15px] leading-relaxed text-[var(--text-2)]">
-              Tollgate is the implementation partner for the faregate paid-action
+              Faregate is the implementation partner for the agents402 paid-action
               standard. We instrument your APIs, content, and tools so AI agents
               pay you instantly over Lightning. You keep the revenue — we take a
               percentage on what we help you earn.
@@ -120,7 +120,7 @@ function Hero() {
           <Metric label="Settlement" value="< 2s" sub="Lightning Network" />
           <Metric label="Min payment" value="1 sat" sub="≈ $0.0006" />
           <Metric label="Setup time" value="2 weeks" sub="typical pilot" />
-          <Metric label="Standard" value="faregate" sub="open · permissionless" />
+          <Metric label="Standard" value="agents402" sub="open · permissionless" />
         </div>
       </div>
     </section>
@@ -164,7 +164,7 @@ function Pitch() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
           <div className="label text-[var(--text-3)]">The opportunity</div>
-          <div className="label text-[var(--text-4)]">tollgate / 01</div>
+          <div className="label text-[var(--text-4)]">faregate / 01</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
           <div className="col-span-12 lg:col-span-7">
@@ -180,12 +180,12 @@ function Pitch() {
               they&apos;re LLM agents reading, summarizing, fact-checking,
               generating reports. Three options have existed: block them, get
               scraped for free, or sign exclusive licensing with one of three big
-              labs. Tollgate gives you the fourth: charge per call, in real time,
+              labs. Faregate gives you the fourth: charge per call, in real time,
               over open infrastructure you don&apos;t have to host.
             </p>
             <p className="mt-4 text-[16px] leading-relaxed text-[var(--text-2)]">
               We instrument your existing API surface and content with the
-              faregate standard, plug in Lightning settlement, and stand up the
+              agents402 standard, plug in Lightning settlement, and stand up the
               dashboard. Most pilots ship in two weeks.
             </p>
           </div>
@@ -223,7 +223,7 @@ function HowWeHelp() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
           <div className="label text-[var(--text-3)]">How we help</div>
-          <div className="label text-[var(--text-4)]">tollgate / 02</div>
+          <div className="label text-[var(--text-4)]">faregate / 02</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
           <div className="col-span-12 lg:col-span-5">
@@ -272,7 +272,7 @@ function HowItWorks() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
           <div className="label text-[var(--text-3)]">How it works</div>
-          <div className="label text-[var(--text-4)]">tollgate / 03</div>
+          <div className="label text-[var(--text-4)]">faregate / 03</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
           <div className="col-span-12 lg:col-span-5">
@@ -284,13 +284,13 @@ function HowItWorks() {
             <p className="mt-6 max-w-md text-[15px] leading-relaxed text-[var(--text-2)]">
               We build on{" "}
               <a
-                href="https://faregate.org"
+                href="https://agents402.org"
                 className="border-b border-zinc-300 text-zinc-950 hover:border-zinc-950 transition"
               >
-                faregate
+                agents402
               </a>
               , an open paid-action standard. Your manifest lives at{" "}
-              <Code>/.well-known/faregate.json</Code>; agents discover with a single
+              <Code>/.well-known/agents402.json</Code>; agents discover with a single
               GET; payment goes through L402 over Lightning. You can swap
               implementation partners (or take it in-house) at any time.
             </p>
@@ -299,7 +299,7 @@ function HowItWorks() {
             <div className="border hairline bg-[var(--code-bg)]">
               <div className="flex items-center justify-between border-b border-[var(--code-line)] px-6 py-3">
                 <div className="label text-zinc-400">Manifest</div>
-                <div className="label text-zinc-600">/.well-known/faregate.json</div>
+                <div className="label text-zinc-600">/.well-known/agents402.json</div>
               </div>
               <pre className="overflow-x-auto px-6 py-6 text-[13px] leading-[1.7] font-mono text-zinc-300">
 {`{
@@ -340,7 +340,7 @@ function Pricing() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
           <div className="label text-[var(--text-3)]">Pricing</div>
-          <div className="label text-[var(--text-4)]">tollgate / 04</div>
+          <div className="label text-[var(--text-4)]">faregate / 04</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
           <div className="col-span-12 lg:col-span-5">
@@ -446,12 +446,12 @@ function CaseStudy() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
           <div className="label text-[var(--text-3)]">Case study</div>
-          <div className="label text-[var(--text-4)]">tollgate / 05</div>
+          <div className="label text-[var(--text-4)]">faregate / 05</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
           <div className="col-span-12 lg:col-span-7">
             <blockquote className="display text-[clamp(28px,3.6vw,44px)] text-zinc-950">
-              &ldquo;Three weeks from kickoff to first paid action. Tollgate&apos;s
+              &ldquo;Three weeks from kickoff to first paid action. Faregate&apos;s
               team wrote the manifest, instrumented our Cloudflare Worker, and
               wired up the dashboard before our legal review on stablecoin
               alternatives even finished.&rdquo;
@@ -493,10 +493,10 @@ function CaseStat({ n, label, sub }: { n: string; label: string; sub?: string })
 function FAQ() {
   const items = [
     {
-      q: "Is Tollgate the same thing as faregate?",
+      q: "Is Faregate the same thing as agents402?",
       a: (
         <>
-          No. faregate is the open protocol. Tollgate is the implementation
+          No. agents402 is the open protocol. Faregate is the implementation
           partner that helps you ship it. The protocol is free to adopt; you can
           run it without us. We&apos;re paid only when we help you earn.
         </>
@@ -550,7 +550,7 @@ function FAQ() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
           <div className="label text-[var(--text-3)]">Common questions</div>
-          <div className="label text-[var(--text-4)]">tollgate / 06</div>
+          <div className="label text-[var(--text-4)]">faregate / 06</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
           <div className="col-span-12 lg:col-span-5">
@@ -592,7 +592,7 @@ function CTA() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b border-zinc-800 py-3">
           <div className="label text-zinc-500">Get started</div>
-          <div className="label text-zinc-700">tollgate / 07</div>
+          <div className="label text-zinc-700">faregate / 07</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-24 sm:py-32">
           <div className="col-span-12 lg:col-span-7">
@@ -685,8 +685,8 @@ function Footer() {
             <div className="label text-[var(--text-3)]">Protocol</div>
             <ul className="mt-4 space-y-2 text-sm text-[var(--text-2)]">
               <li>
-                <Link className="hover:text-zinc-950" href="https://faregate.org">
-                  faregate.org ↗
+                <Link className="hover:text-zinc-950" href="https://agents402.org">
+                  agents402.org ↗
                 </Link>
               </li>
               <li><span className="text-[var(--text-4)]">Spec — soon</span></li>
@@ -698,13 +698,13 @@ function Footer() {
             <p className="mt-4 text-sm leading-relaxed text-[var(--text-2)]">
               Built in Munich · Operating worldwide
               <br />
-              hello@tollgate.dev
+              hello@faregate.org
             </p>
           </div>
         </div>
         <div className="flex items-center justify-between border-t hairline py-4 text-[12px]">
-          <div className="font-mono text-[var(--text-4)]">tollgate / 2026</div>
-          <div className="label text-[var(--text-4)]">Implementation partner · faregate</div>
+          <div className="font-mono text-[var(--text-4)]">faregate / 2026</div>
+          <div className="label text-[var(--text-4)]">Implementation partner · agents402</div>
         </div>
       </div>
     </footer>

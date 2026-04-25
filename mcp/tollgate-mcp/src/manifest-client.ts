@@ -25,7 +25,7 @@ export type Manifest = {
 export function manifestUrlFor(input: string): string {
   // Accept either a domain root, a manifest URL, or any URL on the site.
   const u = new URL(/^https?:\/\//.test(input) ? input : `https://${input}`);
-  return `${u.protocol}//${u.host}/.well-known/faregate.json`;
+  return `${u.protocol}//${u.host}/.well-known/agents402.json`;
 }
 
 export function domainOf(input: string): string {

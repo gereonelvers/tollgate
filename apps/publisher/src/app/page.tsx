@@ -54,11 +54,11 @@ export default function Home() {
                   </span>
                 </Link>
                 <Link
-                  href="/.well-known/faregate.json"
+                  href="/.well-known/agents402.json"
                   className="group inline-flex items-center justify-between border hairline bg-white px-4 py-3 text-[13px] transition hover:bg-[var(--surface)]"
                 >
                   <span className="font-mono text-[var(--text-2)] group-hover:text-zinc-950">
-                    /.well-known/faregate.json
+                    /.well-known/agents402.json
                   </span>
                   <span className="text-[var(--text-3)] group-hover:text-zinc-950 transition">
                     ↗
@@ -173,7 +173,7 @@ Authorization: L402 `}<span className="text-sky-300">{"<token>:<preimage>"}</spa
             title="Discover"
             body={
               <>
-                Agents fetch <Code>/.well-known/faregate.json</Code>. A JSON
+                Agents fetch <Code>/.well-known/agents402.json</Code>. A JSON
                 file is the API surface: actions, types, prices, risk tags,
                 schemas, receipt key.
               </>
@@ -242,7 +242,7 @@ function Nav() {
           </Link>
           <Link
             className="font-mono text-[12.5px] text-[var(--text-2)] hover:text-zinc-950 transition"
-            href="/.well-known/faregate.json"
+            href="/.well-known/agents402.json"
           >
             manifest
           </Link>
@@ -383,7 +383,7 @@ function Footer() {
             <div className="label text-[var(--text-3)]">Protocol</div>
             <ul className="mt-4 space-y-2 text-sm text-[var(--text-2)]">
               <li>
-                <Link href="/.well-known/faregate.json" className="hover:text-zinc-950">
+                <Link href="/.well-known/agents402.json" className="hover:text-zinc-950">
                   Manifest
                 </Link>
               </li>

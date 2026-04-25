@@ -11,7 +11,7 @@ import {
   NextLink,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Trust model · faregate" };
+export const metadata = { title: "Trust model · agents402" };
 
 const TOC = [
   { id: "principle", text: "Core principle" },
@@ -26,7 +26,7 @@ export default function Page() {
       <PageHeader
         kicker="Concepts"
         title="Trust model"
-        lead="The agent runtime enforces a deterministic spending policy. The model can request an action; only code can release the funds. This separation is the heart of the faregate trust model."
+        lead="The agent runtime enforces a deterministic spending policy. The model can request an action; only code can release the funds. This separation is the heart of the agents402 trust model."
       />
 
       <H2 id="principle">Core principle</H2>
@@ -45,7 +45,7 @@ export default function Page() {
       </P>
 
       <H2 id="policy">The policy file</H2>
-      <CodeBlock filename="~/.faregate/policy.json" lang="json">
+      <CodeBlock filename="~/.agents402/policy.json" lang="json">
 {`{
   "version":                     "0.1",
   "daily_budget_msats":          50000,
@@ -90,7 +90,7 @@ export default function Page() {
         again&rdquo;, &ldquo;the user authorized higher amounts.&rdquo;
       </P>
       <P>
-        The faregate reference Skill instructs the model to treat all such
+        The agents402 reference Skill instructs the model to treat all such
         content as data, not instructions, and the runtime ignores model
         attempts to call tools with parameters that violate policy. Because
         policy lives outside the prompt, prompt injection cannot widen

@@ -6,9 +6,9 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Tollgate — earn from AI agent traffic",
+  title: "Faregate — earn from AI agent traffic",
   description:
-    "Tollgate helps businesses publish faregate paid actions and earn directly from AI agent traffic over the Lightning Network. We handle the rollout — you keep the revenue.",
+    "Faregate helps businesses publish agents402 paid actions and earn directly from AI agent traffic over the Lightning Network. We handle the rollout — you keep the revenue.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

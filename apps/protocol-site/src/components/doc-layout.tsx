@@ -120,7 +120,7 @@ function TopNav() {
       <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 py-3 sm:px-10">
         <Link href="/" className="flex items-center gap-3">
           <Mark />
-          <span className="font-semibold tracking-tight text-zinc-950">Faregate</span>
+          <span className="font-semibold tracking-tight text-zinc-950">agents402</span>
           <span className="ml-1 border hairline px-1.5 py-0.5 label text-[var(--text-3)]">
             v0.1
           </span>
@@ -161,7 +161,7 @@ function DocFooter() {
   return (
     <div className="mt-20 border-t hairline pt-8">
       <div className="flex items-center justify-between text-[12px]">
-        <div className="font-mono text-[var(--text-4)]">faregate.org / 2026</div>
+        <div className="font-mono text-[var(--text-4)]">agents402.org / 2026</div>
         <div className="label text-[var(--text-4)]">Open protocol · v0.1</div>
       </div>
     </div>

@@ -21,7 +21,7 @@ tollgate/
 
 ## The 30-second story
 
-A site declares what it sells in a JSON file at `/.well-known/faregate.json`:
+A site declares what it sells in a JSON file at `/.well-known/agents402.json`:
 
 ```json
 {
@@ -98,7 +98,7 @@ cd apps/publisher
 npm run dev
 # → http://localhost:3000  (landing)
 # → http://localhost:3000/dashboard  (live SSE feed)
-# → http://localhost:3000/.well-known/faregate.json  (manifest)
+# → http://localhost:3000/.well-known/agents402.json  (manifest)
 ```
 
 #### Mock mode (no real Lightning required)
@@ -118,7 +118,7 @@ Flip the env var off and you're back on real mainnet.
 # In a separate terminal:
 cd apps/verifier
 VERIFIER_NWC_URL='nostr+walletconnect://...' npm run dev
-# → http://localhost:3010/.well-known/faregate.json
+# → http://localhost:3010/.well-known/agents402.json
 ```
 
 The verifier exposes one paid action (`verify.claim` at 5 sats) and is a standalone Node.js process. With both services running, an agent can pay Site A 3 sats for an answer and then pay Site B 5 sats to fact-check it — the demo's agent-to-agent moment.

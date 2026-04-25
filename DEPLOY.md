@@ -1,6 +1,6 @@
 # Deploying to Railway
 
-Both marketing sites — **tollgate.dev** (corporate) and **faregate.org**
+Both marketing sites — **faregate.org** (corporate) and **agents402.org**
 (protocol docs) — are static-prerendered Next.js apps. No database, no
 runtime env vars, no secrets. They cost almost nothing to host.
 
@@ -16,7 +16,7 @@ public sites.
 3. Railway will offer to deploy the root — **cancel that**, since this is a
    monorepo. Instead, you'll add two services manually.
 
-## Service 1: tollgate.dev (corporate-site)
+## Service 1: faregate.org (corporate-site)
 
 In the project, click **+ New** → **GitHub Repo** → pick `gereonelvers/tollgate` again.
 
@@ -36,18 +36,18 @@ In the project, click **+ New** → **GitHub Repo** → pick `gereonelvers/tollg
 - Click **Generate Domain** to get a `*.up.railway.app` URL — verify the
   site loads there before adding a custom domain.
 
-**Custom domain (tollgate.dev):**
-1. Networking → **Custom Domain** → enter `tollgate.dev`.
+**Custom domain (faregate.org):**
+1. Networking → **Custom Domain** → enter `faregate.org`.
 2. Railway shows you the DNS records to add at your registrar.
-3. For an apex domain (`tollgate.dev`), you typically add either:
+3. For an apex domain (`faregate.org`), you typically add either:
    - An **ALIAS** or **ANAME** record (if your registrar supports it), or
    - The A records Railway provides.
-4. For the `www` subdomain (`www.tollgate.dev`), add a CNAME pointing to
+4. For the `www` subdomain (`www.faregate.org`), add a CNAME pointing to
    the Railway domain.
 5. Wait a few minutes for DNS propagation. Railway will auto-issue an
    HTTPS certificate.
 
-## Service 2: faregate.org (protocol-site)
+## Service 2: agents402.org (protocol-site)
 
 Repeat the process with these settings:
 
@@ -55,7 +55,7 @@ Repeat the process with these settings:
 - Root Directory: `apps/protocol-site`
 - Watch Paths: `apps/protocol-site/**`
 
-**Custom domain (faregate.org):**
+**Custom domain (agents402.org):**
 - Same DNS pattern as above.
 
 ## What Railway will do on every push
@@ -83,7 +83,7 @@ fit comfortably inside Railway's $5 free tier credit.
   the start script isn't binding to `$PORT`. Verify `package.json` has
   `"start": "next start -p ${PORT:-3020}"` (or 3030 for the protocol site).
 - **Domain shows "no service" on Railway page after DNS update** — check
-  the DNS propagation with `dig tollgate.dev +short` and give it 10
+  the DNS propagation with `dig faregate.org +short` and give it 10
   minutes. Railway re-checks every minute.
 - **Build fails with "module not found"** — make sure the package-lock.json
   is committed (check `git ls-tree HEAD apps/corporate-site/package-lock.json`).

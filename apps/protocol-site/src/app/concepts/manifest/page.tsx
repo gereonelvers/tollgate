@@ -13,7 +13,7 @@ import {
   Table,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "Manifest · faregate" };
+export const metadata = { title: "Manifest · agents402" };
 
 const TOC = [
   { id: "purpose", text: "Purpose" },
@@ -30,12 +30,12 @@ export default function Page() {
       <PageHeader
         kicker="Concepts"
         title="The manifest"
-        lead="A single JSON file at /.well-known/faregate.json that declares everything a faregate publisher offers. Cacheable, versioned, signed by the publisher's service key."
+        lead="A single JSON file at /.well-known/agents402.json that declares everything an agents402 publisher offers. Cacheable, versioned, signed by the publisher's service key."
       />
 
       <H2 id="purpose">Purpose</H2>
       <P>
-        The manifest is the published API surface of a faregate publisher.
+        The manifest is the published API surface of an agents402 publisher.
         It exists so an agent can answer four questions with a single GET:
       </P>
       <UL>
@@ -51,7 +51,7 @@ export default function Page() {
       </P>
 
       <H2 id="shape">Shape</H2>
-      <CodeBlock filename="/.well-known/faregate.json" lang="json">
+      <CodeBlock filename="/.well-known/agents402.json" lang="json">
 {`{
   "version": "0.1",
   "service": { … },
@@ -159,7 +159,7 @@ export default function Page() {
       <H2 id="discovery">Discovery rules</H2>
       <UL>
         <LI>
-          The manifest path is <InlineCode>/.well-known/faregate.json</InlineCode> on the canonical
+          The manifest path is <InlineCode>/.well-known/agents402.json</InlineCode> on the canonical
           host. No other paths are honored.
         </LI>
         <LI>
@@ -173,7 +173,7 @@ export default function Page() {
         </LI>
         <LI>
           A 404 on the manifest path means &ldquo;the publisher does not
-          support faregate.&rdquo; Agents must not infer support from any
+          support agents402.&rdquo; Agents must not infer support from any
           other signal.
         </LI>
       </UL>

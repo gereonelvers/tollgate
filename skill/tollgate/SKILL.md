@@ -1,11 +1,11 @@
 ---
 name: tollgate
-description: Use this skill when the user asks Claude to research, browse, summarize, verify facts on, or extract information from a website that may expose paid AI-agent access via Tollgate (a /.well-known/faregate.json manifest). The skill teaches when to call the tollgate MCP tools (discover, pay_and_invoke, spend_summary), how to reason about price/policy, and how to surface receipts to the user.
+description: Use this skill when the user asks Claude to research, browse, summarize, verify facts on, or extract information from a website that may expose paid AI-agent access via Tollgate (a /.well-known/agents402.json manifest). The skill teaches when to call the tollgate MCP tools (discover, pay_and_invoke, spend_summary), how to reason about price/policy, and how to surface receipts to the user.
 ---
 
 # Tollgate paid agent access
 
-Tollgate is a paid-action layer for the agent web. Sites publish a manifest of paid actions at `/.well-known/faregate.json`. Each action has a price in millisatoshis, a deterministic input schema, and produces a signed receipt on completion. Payments settle over the Lightning Network in well under a second.
+Tollgate is a paid-action layer for the agent web. Sites publish a manifest of paid actions at `/.well-known/agents402.json`. Each action has a price in millisatoshis, a deterministic input schema, and produces a signed receipt on completion. Payments settle over the Lightning Network in well under a second.
 
 You access Tollgate sites through three MCP tools:
 
@@ -24,7 +24,7 @@ You access Tollgate sites through three MCP tools:
 
 Use it when:
 - The user asks for research, fact-checking, or content from external websites and authorizes spending.
-- A site you'd want to read happens to expose `/.well-known/faregate.json`.
+- A site you'd want to read happens to expose `/.well-known/agents402.json`.
 - The user explicitly asks you to use Tollgate or pay for something.
 - The user asks how much they've spent on Lightning recently — call `spend_summary`.
 

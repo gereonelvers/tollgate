@@ -9,7 +9,7 @@ import {
   NextLink,
 } from "@/components/doc-layout";
 
-export const metadata = { title: "manifest.json — Spec · faregate" };
+export const metadata = { title: "manifest.json — Spec · agents402" };
 
 const TOC = [
   { id: "endpoint", text: "Endpoint" },
@@ -25,14 +25,14 @@ export default function Page() {
       <PageHeader
         kicker="Specification"
         title="manifest.json"
-        lead="Wire-level reference for the faregate manifest. This is the contract between a publisher and any conforming agent."
+        lead="Wire-level reference for the agents402 manifest. This is the contract between a publisher and any conforming agent."
       />
 
       <H2 id="endpoint">Endpoint</H2>
       <Table
         headers={["Property", "Value"]}
         rows={[
-          ["Path", <InlineCode key="p">/.well-known/faregate.json</InlineCode>],
+          ["Path", <InlineCode key="p">/.well-known/agents402.json</InlineCode>],
           ["Method", "GET"],
           ["Auth", "None — manifest is fully public"],
           ["Status (success)", "200 OK"],
@@ -63,7 +63,7 @@ export default function Page() {
       />
 
       <H2 id="schema">JSON schema</H2>
-      <CodeBlock filename="faregate-manifest-v0.1.schema.json" lang="json">
+      <CodeBlock filename="agents402-manifest-v0.1.schema.json" lang="json">
 {`{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type":    "object",
@@ -140,16 +140,16 @@ export default function Page() {
 
       <H2 id="errors">Error responses</H2>
       <P>
-        A publisher that does not support faregate SHOULD return{" "}
+        A publisher that does not support agents402 SHOULD return{" "}
         <InlineCode>404 Not Found</InlineCode> for the manifest path. Other
         statuses are reserved:
       </P>
       <Table
         headers={["Status", "Meaning"]}
         rows={[
-          ["404", "Publisher does not support faregate (or temporarily disabled)."],
+          ["404", "Publisher does not support agents402 (or temporarily disabled)."],
           ["503", "Manifest temporarily unavailable; agents may retry with backoff."],
-          ["410", "Publisher has permanently retired faregate support."],
+          ["410", "Publisher has permanently retired agents402 support."],
         ]}
       />
 
