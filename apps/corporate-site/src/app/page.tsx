@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { InstallButtons } from "@/components/install-buttons";
+import { DemoPrompt } from "@/components/demo-prompt";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <Nav />
       <Hero />
+      <TryItNow />
       <Pitch />
       <HowWeHelp />
       <HowItWorks />
@@ -120,6 +123,62 @@ function Hero() {
           <Metric label="Min payment" value="1 sat" sub="≈ $0.0006" />
           <Metric label="Setup time" value="2 weeks" sub="typical pilot" />
           <Metric label="Standard" value="agents402" sub="open · permissionless" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TryItNow() {
+  return (
+    <section id="try-it" className="border-b hairline bg-[var(--bg-2)]">
+      <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
+        <div className="flex items-center justify-between border-b hairline py-3">
+          <div className="label text-[var(--text-3)]">Try it now</div>
+          <div className="label text-[var(--text-4)]">
+            you, your agent, real sats
+          </div>
+        </div>
+        <div className="grid grid-cols-12 gap-8 py-16 sm:py-20">
+          <div className="col-span-12 lg:col-span-5">
+            <h2 className="display text-[clamp(28px,4vw,44px)] text-zinc-950">
+              Three minutes
+              <br />
+              <span className="text-[var(--text-3)]">end-to-end.</span>
+            </h2>
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-[var(--text-2)]">
+              Drop the reference MCP server into your agent client, then point
+              it at our demo publisher. The first paywall walks you through
+              pairing a Lightning wallet — paste an existing NWC URI or
+              create a self-custodial Spark wallet (we sponsor the first 500
+              sats). Real Lightning, mainnet sats, your money.
+            </p>
+            <ul className="mt-6 space-y-2 text-[14px] text-[var(--text-2)]">
+              <li>
+                <span className="font-mono text-[12px] text-[var(--text-4)]">
+                  01.
+                </span>{" "}
+                Install <code className="font-mono">@agents402/mcp</code> in
+                Cursor / Claude Code / Claude Desktop
+              </li>
+              <li>
+                <span className="font-mono text-[12px] text-[var(--text-4)]">
+                  02.
+                </span>{" "}
+                Paste the prompt to the right
+              </li>
+              <li>
+                <span className="font-mono text-[12px] text-[var(--text-4)]">
+                  03.
+                </span>{" "}
+                Pair a wallet when prompted; agent retries; sats land
+              </li>
+            </ul>
+          </div>
+          <div className="col-span-12 lg:col-span-7 space-y-6">
+            <InstallButtons />
+            <DemoPrompt />
+          </div>
         </div>
       </div>
     </section>

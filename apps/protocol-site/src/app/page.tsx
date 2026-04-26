@@ -1,9 +1,7 @@
 import {
   DocLayout,
   H2,
-  H3,
   P,
-  Lead,
   UL,
   LI,
   InlineCode,
@@ -12,6 +10,7 @@ import {
   PageHeader,
   NextLink,
 } from "@/components/doc-layout";
+import { InstallButtons } from "@/components/install-buttons";
 
 export const metadata = {
   title: "Introduction · agents402",
@@ -19,6 +18,7 @@ export const metadata = {
 
 const TOC = [
   { id: "what", text: "What it is" },
+  { id: "install", text: "Install the agent side" },
   { id: "shape", text: "The shape of it" },
   { id: "why", text: "Why now" },
   { id: "scope", text: "What's in / out of scope" },
@@ -48,6 +48,15 @@ export default function Page() {
         that issues an L402 challenge, and a wallet on either end. Everything
         else — pricing, policy, receipts, reputation — composes from there.
       </P>
+
+      <H2 id="install">Install the agent side</H2>
+      <P>
+        The reference MCP server is published as{" "}
+        <InlineCode>@agents402/mcp</InlineCode>. Drop it into any MCP-aware
+        client and the first time your agent hits a paywall, it will walk
+        you through pairing a Lightning wallet.
+      </P>
+      <InstallButtons />
 
       <H2 id="shape">The shape of it</H2>
       <CodeBlock filename="GET https://example.com/.well-known/agents402.json" lang="json">

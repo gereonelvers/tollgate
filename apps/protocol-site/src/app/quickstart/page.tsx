@@ -10,6 +10,7 @@ import {
   PageHeader,
   NextLink,
 } from "@/components/doc-layout";
+import { InstallButtons } from "@/components/install-buttons";
 
 export const metadata = { title: "Quickstart · agents402" };
 
@@ -133,17 +134,17 @@ L402_SECRET=any-random-string`}
           <InlineCode>spend_summary</InlineCode> — reports today&apos;s spend and remaining budget
         </LI>
       </UL>
-      <CodeBlock filename=".mcp.json" lang="json">
-{`{
-  "mcpServers": {
-    "agents402": {
-      "command": "node",
-      "args":    ["./dist/mcp-server.js"],
-      "env":     { "AGENT_NWC_URL": "nostr+walletconnect://…" }
-    }
-  }
-}`}
-      </CodeBlock>
+      <P>
+        Add the published reference server to any MCP-aware client:
+      </P>
+      <InstallButtons />
+      <P>
+        That&apos;s it — no wallet pre-configuration. The first time the agent
+        hits a paywall, the MCP returns a structured{" "}
+        <InlineCode>needs_setup</InlineCode> response and walks the user
+        through pairing a wallet (paste an existing NWC URI, or open a
+        browser to create a self-custodial Spark wallet).
+      </P>
 
       <H2 id="verify">Verify with a real payment</H2>
       <CodeBlock filename="terminal" lang="bash">
