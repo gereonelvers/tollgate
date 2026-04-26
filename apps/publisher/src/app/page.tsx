@@ -87,20 +87,16 @@ export default function Home() {
                 to ask it anything, and we will pretend to be qualified.
               </div>
 
-              <div className="mt-6 grid grid-cols-1 gap-x-8 sm:grid-cols-2 sm:[column-fill:balance]">
-                {leadParagraphs(lead.body).map((p, i) => (
-                  <p
-                    key={i}
-                    className={`mb-5 text-[15.5px] leading-[1.62] text-[var(--text)] ${
-                      i === 0 ? "drop-cap" : ""
-                    }`}
-                  >
-                    {p}
-                  </p>
-                ))}
-              </div>
+              <p className="drop-cap mt-6 text-[15.5px] leading-[1.62] text-[var(--text)]">
+                {firstSentences(lead.body, 1)}{" "}
+                <span className="text-[var(--text-3)] italic">
+                  …continued, behind the paywall.
+                </span>
+              </p>
 
-              <div className="mt-2 flex items-center gap-4 border-t hairline-soft pt-4 text-[12.5px]">
+              <Paywall actionId="ask.site_agent" priceSats={3} />
+
+              <div className="mt-6 flex items-center gap-4 border-t hairline-soft pt-4 text-[12.5px]">
                 <span className="font-mono text-[var(--text-3)]">
                   Filed {lead.date}
                 </span>
@@ -202,7 +198,10 @@ export default function Home() {
                   {doc.title}
                 </h3>
                 <p className="mt-3 text-[14px] leading-relaxed text-[var(--text-2)]">
-                  {firstSentences(doc.body, 2)}
+                  {firstSentences(doc.body, 1)}{" "}
+                  <span className="text-[var(--text-3)] italic">
+                    Paywalled — ask the editor for the rest.
+                  </span>
                 </p>
                 <div className="mt-3 font-mono text-[11.5px] text-[var(--text-4)]">
                   {doc.id} · by {doc.author}
@@ -451,6 +450,38 @@ function RiskTag({ risk = "low" }: { risk?: "low" | "medium" | "high" }) {
   );
 }
 
+function Paywall({
+  actionId,
+  priceSats,
+}: {
+  actionId: string;
+  priceSats: number;
+}) {
+  return (
+    <div className="mt-7 border-[2px] hairline bg-[var(--surface)] px-6 py-5">
+      <div className="flex items-baseline justify-between">
+        <span className="label text-[var(--accent)]">Paywalled</span>
+        <span className="font-mono text-[13px] tabular text-[var(--accent)]">
+          {priceSats} sat{priceSats === 1 ? "" : "s"} per question
+        </span>
+      </div>
+      <p className="mt-3 text-[14.5px] leading-relaxed text-[var(--text)]">
+        The remainder of this article — and the rest of our archive — is
+        reserved for paying subscribers. Have your agent call{" "}
+        <code className="font-mono text-[13px] text-[var(--accent)]">
+          {actionId}
+        </code>{" "}
+        over L402; the body and a cited answer arrive together. Settles in
+        a few seconds. We do not sell email addresses (we cannot).
+      </p>
+      <p className="mt-3 text-[12.5px] italic text-[var(--text-3)]">
+        If you are a human reading this directly, congratulations on your
+        attention span. The agents have already moved on.
+      </p>
+    </div>
+  );
+}
+
 function Colophon() {
   return (
     <footer id="colophon">
@@ -523,13 +554,6 @@ function Colophon() {
 /* ────────────────────────────────────────────────────────────── */
 /* helpers                                                       */
 /* ────────────────────────────────────────────────────────────── */
-
-function leadParagraphs(body: string): string[] {
-  return body
-    .split(/\n\n+/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 function firstSentences(body: string, n: number): string {
   const sentences = body
