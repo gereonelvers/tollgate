@@ -12,7 +12,6 @@ export default function Home() {
       <HowWeHelp />
       <HowItWorks />
       <Pricing />
-      <CaseStudy />
       <FAQ />
       <CTA />
       <Footer />
@@ -467,56 +466,6 @@ function Tier({
   );
 }
 
-function CaseStudy() {
-  return (
-    <section className="border-b hairline">
-      <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
-        <div className="flex items-center justify-between border-b hairline py-3">
-          <div className="label text-[var(--text-3)]">Case study</div>
-          <div className="label text-[var(--text-4)]">faregate / 05</div>
-        </div>
-        <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
-          <div className="col-span-12 lg:col-span-7">
-            <blockquote className="display text-[clamp(28px,3.6vw,44px)] text-zinc-950">
-              &ldquo;Three weeks from kickoff to first paid action. Faregate&apos;s
-              team wrote the manifest, instrumented our Cloudflare Worker, and
-              wired up the dashboard before our legal review on stablecoin
-              alternatives even finished.&rdquo;
-            </blockquote>
-            <div className="mt-8 flex items-center gap-4">
-              <div className="size-10 rounded-full bg-[var(--surface)]" />
-              <div>
-                <div className="text-[14px] font-medium text-zinc-950">L. Marsden</div>
-                <div className="text-[13px] text-[var(--text-3)]">
-                  CTO, Vertex Docs · API & developer reference
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-span-12 lg:col-span-5">
-            <div className="grid grid-cols-2 gap-px border hairline bg-[var(--line)]">
-              <CaseStat n="3 weeks" label="Time to first payment" />
-              <CaseStat n="42M" label="Agent requests / month" />
-              <CaseStat n="$8.4k" label="Monthly recurring revenue" sub="from agent traffic" />
-              <CaseStat n="0%" label="Impact on human users" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CaseStat({ n, label, sub }: { n: string; label: string; sub?: string }) {
-  return (
-    <div className="bg-[var(--bg)] p-6">
-      <div className="display tabular text-3xl text-zinc-950">{n}</div>
-      <div className="mt-2 label text-[var(--text-3)]">{label}</div>
-      {sub && <div className="mt-1 font-mono text-[11px] text-[var(--text-4)]">{sub}</div>}
-    </div>
-  );
-}
-
 function FAQ() {
   const items = [
     {
@@ -578,7 +527,7 @@ function FAQ() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b hairline py-3">
           <div className="label text-[var(--text-3)]">Common questions</div>
-          <div className="label text-[var(--text-4)]">faregate / 06</div>
+          <div className="label text-[var(--text-4)]">faregate / 05</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-20 sm:py-24">
           <div className="col-span-12 lg:col-span-5">
@@ -620,7 +569,7 @@ function CTA() {
       <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
         <div className="flex items-center justify-between border-b border-zinc-800 py-3">
           <div className="label text-zinc-500">Get started</div>
-          <div className="label text-zinc-700">faregate / 07</div>
+          <div className="label text-zinc-700">faregate / 06</div>
         </div>
         <div className="grid grid-cols-12 gap-8 py-24 sm:py-32">
           <div className="col-span-12 lg:col-span-7">
