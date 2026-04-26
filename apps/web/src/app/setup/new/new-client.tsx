@@ -21,7 +21,7 @@ type Phase =
   | { kind: "sending-to-cli"; callback: string }
   | { kind: "cli-done" }
   | { kind: "cli-failed"; reason: string }
-  | { kind: "done" };
+  | { kind: "done"; address: string };
 
 export function NewSetup() {
   const [phase, setPhase] = useState<Phase>({ kind: "intro" });
@@ -140,10 +140,17 @@ export function NewSetup() {
       return;
     }
 
-    // Normal mode: route to wallet page.
-    setPhase({ kind: "done" });
-    router.push("/wallet");
+    // Normal mode: show explicit success + redirect to /wallet.
+    setPhase({ kind: "done", address: phase.address });
   }
+
+  // Auto-redirect once we hit the done state, but the success card already has
+  // a prominent button so the user can jump immediately.
+  useEffect(() => {
+    if (phase.kind !== "done") return;
+    const t = setTimeout(() => router.push("/wallet"), 2500);
+    return () => clearTimeout(t);
+  }, [phase.kind, router]);
 
   if (phase.kind === "sending-to-cli") {
     return (
@@ -174,6 +181,36 @@ export function NewSetup() {
             The same wallet is also saved in this browser so you can manage it
             from <Link href="/wallet" className="underline underline-offset-4">/wallet</Link>.
           </p>
+        </div>
+      </Section>
+    );
+  }
+
+  if (phase.kind === "done") {
+    return (
+      <Section eyebrow="Ready" title="Your wallet is live." foot="setup / 02 — done">
+        <div className="border hairline bg-emerald-50 p-7">
+          <div className="label text-emerald-800">Wallet created and saved in this browser</div>
+          <p className="mt-3 text-[14.5px] leading-relaxed text-emerald-900">
+            You can now send, receive, and inspect Lightning payments from{" "}
+            <code className="font-mono text-emerald-950">/wallet</code>. Your
+            backup phrase is the only way to recover this wallet — keep it safe.
+          </p>
+          <p className="mt-2 font-mono text-[12px] text-emerald-900/80 break-all">
+            {phase.address}
+          </p>
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              href="/wallet"
+              className="inline-flex items-center justify-center border hairline bg-zinc-950 px-6 py-3 text-[14px] font-medium text-white hover:bg-zinc-800 transition"
+            >
+              Open my wallet →
+            </Link>
+            <span className="text-[12.5px] text-emerald-900/70">
+              Auto-redirecting in a moment…
+            </span>
+          </div>
         </div>
       </Section>
     );
