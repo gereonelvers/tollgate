@@ -5,7 +5,6 @@ export default function Home() {
     <main className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       <Nav />
       <Hero />
-      <Logos />
       <Pitch />
       <HowWeHelp />
       <HowItWorks />
@@ -121,37 +120,6 @@ function Hero() {
           <Metric label="Min payment" value="1 sat" sub="≈ $0.0006" />
           <Metric label="Setup time" value="2 weeks" sub="typical pilot" />
           <Metric label="Standard" value="agents402" sub="open · permissionless" />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Logos() {
-  const items = [
-    "ARCHIVE.NEWS",
-    "MARKET·SIGNALS",
-    "STATSCRAPE",
-    "OPENPRESS",
-    "VERTEX/DOCS",
-    "FIELD·NOTES",
-  ];
-  return (
-    <section className="border-b hairline bg-[var(--bg-2)]">
-      <div className="mx-auto max-w-[1400px] px-6 sm:px-10">
-        <div className="flex items-center justify-between border-b hairline py-3">
-          <div className="label text-[var(--text-3)]">Pilot partners</div>
-          <div className="label text-[var(--text-4)]">indicative</div>
-        </div>
-        <div className="grid grid-cols-2 gap-px bg-[var(--line)] sm:grid-cols-3 lg:grid-cols-6">
-          {items.map((l) => (
-            <div
-              key={l}
-              className="bg-[var(--bg-2)] px-6 py-8 text-center font-mono text-[12.5px] text-[var(--text-3)] tracking-[0.18em]"
-            >
-              {l}
-            </div>
-          ))}
         </div>
       </div>
     </section>
@@ -359,8 +327,8 @@ function Pricing() {
             <div className="grid grid-cols-1 gap-px border hairline bg-[var(--line)] sm:grid-cols-3">
               <Tier
                 tier="Pilot"
-                rev="15%"
-                period="of agent revenue · first 6 months"
+                rev="Rev share"
+                period="initial · first 6 months"
                 features={[
                   "Up to 5 paid actions",
                   "Hosted dashboard",
@@ -371,8 +339,8 @@ function Pricing() {
               />
               <Tier
                 tier="Standard"
-                rev="10%"
-                period="of agent revenue · ongoing"
+                rev="Rev share"
+                period="ongoing"
                 highlight
                 features={[
                   "Unlimited paid actions",
@@ -538,9 +506,10 @@ function FAQ() {
       q: "What does a typical engagement cost?",
       a: (
         <>
-          Zero up-front. We take 10–15% of agent revenue we help generate. No
-          retainer, no SOW for the build. If we don&apos;t move money, you owe
-          us nothing.
+          Zero up-front. We take a percentage of agent revenue we help
+          generate — share scales with engagement size, locked at signing.
+          No retainer, no SOW for the build. If we don&apos;t move money,
+          you owe us nothing.
         </>
       ),
     },
@@ -609,29 +578,29 @@ function CTA() {
             </p>
           </div>
           <div className="col-span-12 lg:col-span-5 flex items-end">
-            <form className="w-full">
-              <label className="label block text-zinc-500">Your domain</label>
-              <input
-                type="text"
-                placeholder="your-company.com"
-                className="mt-2 w-full border border-zinc-800 bg-zinc-950 px-4 py-3 font-mono text-[14px] text-white placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
-              />
-              <label className="label mt-5 block text-zinc-500">Work email</label>
-              <input
-                type="email"
-                placeholder="you@your-company.com"
-                className="mt-2 w-full border border-zinc-800 bg-zinc-950 px-4 py-3 font-mono text-[14px] text-white placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
-              />
-              <button
-                type="button"
-                className="mt-6 w-full bg-white px-4 py-3 text-[14px] font-medium text-zinc-950 hover:bg-zinc-100 transition"
+            <div className="w-full border border-zinc-800 bg-zinc-900/40 p-7">
+              <div className="label text-zinc-500">Direct line</div>
+              <a
+                href="mailto:hello@faregate.org?subject=Faregate%20pilot%20inquiry&body=Domain%3A%20%0AAgent%20traffic%20we%27ve%20noticed%3A%20%0AAnything%20else%3A%20"
+                className="mt-3 block font-mono text-[clamp(20px,2.5vw,28px)] text-white hover:text-zinc-300 transition break-all"
               >
-                Request audit →
-              </button>
-              <p className="mt-3 text-center font-mono text-[11px] text-zinc-600">
-                no spam · we reply within 48h
+                hello@faregate.org
+              </a>
+              <p className="mt-5 text-[14px] leading-relaxed text-zinc-400">
+                Send the domain you&apos;d like instrumented and what kind of
+                agent traffic you&apos;re seeing. We reply within 48 hours
+                with three concrete actions and a revenue floor.
               </p>
-            </form>
+              <a
+                href="mailto:hello@faregate.org?subject=Faregate%20pilot%20inquiry&body=Domain%3A%20%0AAgent%20traffic%20we%27ve%20noticed%3A%20%0AAnything%20else%3A%20"
+                className="mt-6 block w-full bg-white px-4 py-3 text-center text-[14px] font-medium text-zinc-950 hover:bg-zinc-100 transition"
+              >
+                Open mail draft →
+              </a>
+              <p className="mt-3 text-center font-mono text-[11px] text-zinc-600">
+                no form, no CRM · plain email
+              </p>
+            </div>
           </div>
         </div>
       </div>
