@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@agents402/core": "file:../core",
+    "@buildonspark/spark-sdk": "^0.7.15",
     "@getalby/sdk": "^7.0.0"
   },
   "devDependencies": {

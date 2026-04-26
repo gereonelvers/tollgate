@@ -1,0 +1,17 @@
+{
+  "name": "@agents402/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "agents402-setup": "dist/setup.js"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "setup": "node dist/setup.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.3"
+  }
+}

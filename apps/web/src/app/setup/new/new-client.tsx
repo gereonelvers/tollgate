@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { newSparkWallet, saveWallet, type StoredWallet } from "@/lib/storage";
 import { createNewSparkWallet, pickConfirmIndices } from "@/lib/spark";
 
@@ -18,12 +18,25 @@ type Phase =
       indices: number[];
       inputs: Record<number, string>;
     }
+  | { kind: "sending-to-cli"; callback: string }
+  | { kind: "cli-done" }
+  | { kind: "cli-failed"; reason: string }
   | { kind: "done" };
 
 export function NewSetup() {
   const [phase, setPhase] = useState<Phase>({ kind: "intro" });
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // CLI-pairing mode: when this page is opened by `npx @agents402/setup`, the
+  // CLI passes a callback URL pointing at its localhost listener and a state
+  // token. After backup confirmation we POST the wallet config to that URL
+  // instead of routing to /wallet — the CLI writes ~/.tollgate/wallet.json.
+  const callback = searchParams.get("callback");
+  const stateToken = searchParams.get("state");
+  const isCliMode = Boolean(callback && stateToken);
+
   const network: NonNullable<StoredWallet["spark_network"]> =
     (process.env.NEXT_PUBLIC_SPARK_NETWORK as
       | "MAINNET"
@@ -68,7 +81,7 @@ export function NewSetup() {
     setPhase({ ...phase, inputs: { ...phase.inputs, [idx]: value } });
   }
 
-  function handleConfirmSubmit() {
+  async function handleConfirmSubmit() {
     if (phase.kind !== "confirm-seed") return;
     const words = phase.mnemonic.trim().split(/\s+/);
     for (const i of phase.indices) {
@@ -79,7 +92,6 @@ export function NewSetup() {
         return;
       }
     }
-    // Persist and route to wallet page.
     const wallet = newSparkWallet({
       mnemonic: phase.mnemonic,
       network,
@@ -88,8 +100,105 @@ export function NewSetup() {
     });
     wallet.backup_confirmed = true;
     saveWallet(wallet);
+
+    // CLI-pairing mode: ship the config to the localhost listener and stop.
+    if (isCliMode && callback && stateToken) {
+      setPhase({ kind: "sending-to-cli", callback });
+      try {
+        const cliConfig = {
+          provider: "spark" as const,
+          spark_mnemonic: phase.mnemonic,
+          spark_network: network,
+          spark_address: phase.address,
+          spark_identity_pubkey: phase.identity_pubkey,
+          label: "Spark wallet (paired via CLI)",
+        };
+        const r = await fetch(callback, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-agents402-state": stateToken,
+          },
+          body: JSON.stringify(cliConfig),
+        });
+        if (!r.ok) {
+          const txt = await r.text().catch(() => "");
+          setPhase({
+            kind: "cli-failed",
+            reason: `Localhost listener returned ${r.status}. ${txt.slice(0, 200)}`,
+          });
+          return;
+        }
+        setPhase({ kind: "cli-done" });
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setPhase({
+          kind: "cli-failed",
+          reason: `Couldn't reach the CLI listener at ${callback}. ${msg}. The wallet is still saved in your browser; you can also pair it later via the Wallet page.`,
+        });
+      }
+      return;
+    }
+
+    // Normal mode: route to wallet page.
     setPhase({ kind: "done" });
     router.push("/wallet");
+  }
+
+  if (phase.kind === "sending-to-cli") {
+    return (
+      <Section eyebrow="Linking" title="Sending wallet to your terminal…" foot="setup / 02 — CLI pairing">
+        <Loading
+          steps={[
+            "Browser: POSTing wallet config to the localhost listener",
+            "CLI: writing ~/.tollgate/wallet.json",
+            "Almost done…",
+          ]}
+        />
+      </Section>
+    );
+  }
+
+  if (phase.kind === "cli-done") {
+    return (
+      <Section eyebrow="Linked" title="Your wallet is paired with the MCP." foot="setup / 02 — done">
+        <div className="border hairline bg-emerald-50 p-7">
+          <div className="label text-emerald-800">Wallet linked successfully</div>
+          <p className="mt-3 text-[14.5px] leading-relaxed text-emerald-900">
+            The setup CLI has written the wallet config to{" "}
+            <code className="font-mono text-emerald-950">~/.tollgate/wallet.json</code>.
+            Return to your terminal — the CLI will exit on its own. You can
+            close this tab.
+          </p>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-emerald-900">
+            The same wallet is also saved in this browser so you can manage it
+            from <Link href="/wallet" className="underline underline-offset-4">/wallet</Link>.
+          </p>
+        </div>
+      </Section>
+    );
+  }
+
+  if (phase.kind === "cli-failed") {
+    return (
+      <Section eyebrow="Pairing failed" title="Couldn't reach the CLI." foot="setup / 02 — error">
+        <div className="border border-rose-200 bg-rose-50 p-7">
+          <div className="label text-rose-800">Pairing error</div>
+          <p className="mt-3 text-[14.5px] leading-relaxed text-rose-900">{phase.reason}</p>
+          <p className="mt-3 text-[13.5px] leading-relaxed text-rose-900">
+            The wallet is still saved in this browser. You can re-run{" "}
+            <code className="font-mono">npx @agents402/setup</code> and try
+            again, or pair it manually from the Wallet page.
+          </p>
+          <Link
+            href="/wallet"
+            className="mt-5 inline-block border hairline bg-zinc-950 px-4 py-2.5 text-[13px] text-white hover:bg-zinc-800 transition"
+          >
+            Go to wallet →
+          </Link>
+        </div>
+      </Section>
+    );
   }
 
   if (phase.kind === "creating") {
@@ -210,16 +319,27 @@ export function NewSetup() {
   // intro
   return (
     <Section
-      eyebrow="Create new wallet"
+      eyebrow={isCliMode ? "Create + link wallet" : "Create new wallet"}
       title={
         <>
           A self-custodial wallet,
           <br />
-          <span className="text-[var(--text-3)]">in your browser, in 60 seconds.</span>
+          <span className="text-[var(--text-3)]">
+            {isCliMode ? "linked straight to your terminal." : "in your browser, in 60 seconds."}
+          </span>
         </>
       }
-      foot="setup / 02 — Spark · self-custodial"
+      foot={isCliMode ? "setup / 02 — CLI pairing" : "setup / 02 — Spark · self-custodial"}
     >
+      {isCliMode && (
+        <div className="mb-6 border hairline bg-[var(--surface)] px-5 py-4 font-mono text-[12.5px] text-[var(--text-2)]">
+          <span className="label text-[var(--text-3)] mr-3">CLI</span>
+          Your <code className="text-zinc-950">npx @agents402/setup</code> session
+          is listening on{" "}
+          <code className="text-zinc-950">{callback}</code>. After you create the
+          wallet, the config will be sent there automatically.
+        </div>
+      )}
       <div className="grid gap-px border hairline bg-[var(--line)] sm:grid-cols-3">
         <FactCard
           n="i"

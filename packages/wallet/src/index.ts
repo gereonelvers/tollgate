@@ -19,3 +19,4 @@ export {
 
 export { DevFakeWalletBackend } from "./backends/dev-fake.js";
 export { NwcWalletBackend } from "./backends/nwc.js";
+export { SparkWalletBackend } from "./backends/spark.js";
