@@ -169,7 +169,9 @@ export async function POST(req: NextRequest, ctx: RouteCtx) {
   const outputHash = hashOutput(result.output_text_for_hash);
   // Optional buyer pubkey — agent can hand us a Nostr pubkey it controls so it
   // can later publish verifiable feedback. Hex-encoded 32-byte schnorr pubkey.
-  const buyerHeader = req.headers.get("x-agents402-buyer-pubkey");
+  const buyerHeader =
+    req.headers.get("x-agents402-buyer-pubkey") ??
+    req.headers.get("x-tollgate-buyer-pubkey");
   const buyer_pubkey =
     buyerHeader && /^[0-9a-f]{64}$/i.test(buyerHeader.trim())
       ? buyerHeader.trim().toLowerCase()

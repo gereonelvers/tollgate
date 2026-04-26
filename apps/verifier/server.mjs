@@ -294,7 +294,9 @@ const server = http.createServer(async (req, res) => {
       const out = evaluateClaim(body.claim);
 
       // Optional buyer pubkey for verifiable Nostr feedback later.
-      const buyerHeader = req.headers["x-agents402-buyer-pubkey"];
+      const buyerHeader =
+        req.headers["x-agents402-buyer-pubkey"] ??
+        req.headers["x-tollgate-buyer-pubkey"];
       const buyer_pubkey =
         typeof buyerHeader === "string" && /^[0-9a-f]{64}$/i.test(buyerHeader.trim())
           ? buyerHeader.trim().toLowerCase()
