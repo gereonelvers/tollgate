@@ -23,9 +23,9 @@ export const ACTIONS: Record<string, ActionDefinition> = {
     manifest: {
       id: "ask.site_agent",
       type: "site_agent_query",
-      title: "Ask the site agent",
+      title: "Ask the Editor",
       description:
-        "A question-answering endpoint over the publisher's archive. Returns a cited answer drawn only from the publisher's documents.",
+        "A question-answering endpoint over The Halving Gazette's archive. Cites only material we have actually published — a low bar, but a sincere one. Three sats. Final.",
       endpoint: `${PUBLISHER_BASE}/api/actions/ask.site_agent`,
       method: "POST",
       price_msats: 3000,
@@ -52,9 +52,9 @@ export const ACTIONS: Record<string, ActionDefinition> = {
     manifest: {
       id: "extract.structured",
       type: "structured_data",
-      title: "Structured document extraction",
+      title: "Reprint a single article, structured",
       description:
-        "Returns clean structured JSON for a single document by id: title, author, date, summary, key_claims.",
+        "Returns one article from the archive as clean JSON — title, author, date, summary, key claims — for the sort of agent that prefers a tidy feed and is willing to pay a sat for it.",
       endpoint: `${PUBLISHER_BASE}/api/actions/extract.structured`,
       method: "POST",
       price_msats: 1000,

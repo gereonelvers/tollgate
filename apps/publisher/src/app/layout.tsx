@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Playfair_Display, Newsreader, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
+  weight: ["400", "700", "800", "900"],
+  style: ["normal", "italic"],
+});
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 const geistMono = Geist_Mono({
@@ -13,9 +22,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tollgate — paid actions for the agent web",
+  title: "The Halving Gazette — All the news that's small enough to settle on a single block.",
   description:
-    "Tollgate is a paid-action protocol for AI agents. Sites declare what's for sale; agents pay over Lightning under deterministic policy; every paid action ships a signed receipt.",
+    "Established 2009. Volume XVII, Issue IV. A periodical of record for the agent web, paid in sats, settled in seconds, fact-checked in 6 confirmations.",
 };
 
 export default function RootLayout({
@@ -26,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${playfair.variable} ${newsreader.variable} ${geistMono.variable} h-full antialiased`}
       style={{ colorScheme: "light" }}
     >
       <body className="min-h-full flex flex-col">{children}</body>

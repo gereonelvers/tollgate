@@ -112,36 +112,36 @@ export function Dashboard() {
   return (
     <main className="min-h-screen bg-[var(--bg)] text-[var(--text)]">
       {/* top bar */}
-      <header className="sticky top-0 z-30 border-b hairline bg-white/85 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b-[2px] hairline bg-[var(--bg)]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 py-3 sm:px-10">
           <div className="flex items-center gap-4">
             <Link
               href="/"
-              className="flex items-center gap-3 text-[var(--text-2)] hover:text-zinc-950 transition"
+              className="flex items-center gap-3 hover:text-[var(--accent)] transition"
             >
               <Mark />
-              <span className="font-semibold tracking-tight text-zinc-950">Tollgate</span>
+              <span className="masthead text-[20px] text-[var(--text)]">The Halving Gazette</span>
             </Link>
             <span className="text-[var(--text-4)]">/</span>
-            <span className="label text-[var(--text-3)]">Live operations</span>
+            <span className="label">Circulation Desk</span>
           </div>
           <div className="flex items-center gap-4">
             {mockMode && (
-              <span className="border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 label text-fuchsia-800">
+              <span className="border border-[#7a1d1d] bg-[#f0d7d7] px-2 py-0.5 label" style={{ color: "#7a1d1d" }}>
                 Mock Lightning
               </span>
             )}
-            <span className="flex items-center gap-2 label text-[var(--text-3)]">
+            <span className="flex items-center gap-2 label">
               <span
                 className={`size-1.5 rounded-full transition ${
-                  streamLive ? "bg-emerald-500 pulse-dot" : "bg-zinc-400"
+                  streamLive ? "bg-[var(--accent)] pulse-dot" : "bg-[var(--text-4)]"
                 }`}
               />
-              {streamLive ? "Stream live" : "Reconnecting"}
+              {streamLive ? "Wire live" : "Reconnecting"}
             </span>
             <Link
               href="/.well-known/agents402.json"
-              className="font-mono text-[12px] text-[var(--text-3)] hover:text-zinc-950 transition"
+              className="font-mono text-[12px] text-[var(--text-3)] hover:text-[var(--accent)] transition"
             >
               manifest ↗
             </Link>
@@ -152,28 +152,33 @@ export function Dashboard() {
       <div className="mx-auto max-w-[1500px] px-6 sm:px-10">
         {/* page heading */}
         <div className="border-b hairline py-10">
-          <div className="label text-[var(--text-3)]">Dashboard</div>
+          <div className="label">Press Office</div>
           <div className="mt-3 flex flex-wrap items-baseline justify-between gap-4">
-            <h1 className="display text-[clamp(28px,3.5vw,44px)] text-zinc-950">
-              Operations
+            <h1 className="display text-[clamp(32px,4vw,52px)] text-[var(--text)]">
+              Circulation, today and otherwise.
             </h1>
             <div className="font-mono text-[12px] text-[var(--text-3)]">
               {lastReceipt
-                ? `last receipt · ${shortHash(lastReceipt.receipt_id, 8)} · ${since(lastReceipt.created_at)}`
-                : "awaiting first paid action"}
+                ? `last sale · ${shortHash(lastReceipt.receipt_id, 8)} · ${since(lastReceipt.created_at)}`
+                : "awaiting first sale"}
             </div>
           </div>
+          <p className="dek mt-4 max-w-2xl text-[15px]">
+            Live counts of sats moving in, articles going out, and the
+            occasional 402 we hand back to readers who arrive without exact
+            change.
+          </p>
         </div>
 
         {/* metric strip */}
         <div className="grid grid-cols-2 border-b hairline sm:grid-cols-4">
-          <Metric label="Revenue" value={formatSats(stats?.total_revenue_msats ?? 0)} sub="all-time" />
-          <Metric label="Paid actions" value={totalCount.toString()} sub="all-time" />
-          <Metric label="Avg / call" value={formatSats(avgMsats)} sub="msats per action" />
+          <Metric label="Receipts" value={formatSats(stats?.total_revenue_msats ?? 0)} sub="cumulative, in sats" />
+          <Metric label="Articles sold" value={totalCount.toString()} sub="since the first edition" />
+          <Metric label="Avg sale" value={formatSats(avgMsats)} sub="per article" />
           <Metric
-            label="Distinct buyers"
+            label="Subscribers"
             value={`${new Set((stats?.receipts ?? []).map((r) => r.payment_hash.slice(0, 16))).size}`}
-            sub="unique payment hashes"
+            sub="distinct, anonymous, by design"
           />
         </div>
 
@@ -181,16 +186,16 @@ export function Dashboard() {
         <div className="grid grid-cols-12 gap-px border-b hairline bg-[var(--line)]">
           <div className="col-span-12 bg-[var(--bg)] p-6 lg:col-span-5">
             <div className="flex items-baseline justify-between">
-              <div className="label text-[var(--text-3)]">Live feed</div>
+              <div className="label">On The Wire</div>
               <div className="font-mono text-[11px] text-[var(--text-4)]">
                 {feed.length} events · {streamLive ? "live" : "—"}
               </div>
             </div>
             <ul className="mt-5 space-y-1">
               {feed.length === 0 && (
-                <li className="border hairline px-4 py-8 text-center font-mono text-[12px] text-[var(--text-3)]">
-                  awaiting first paid action — try{" "}
-                  <span className="text-zinc-950">curl -X POST /api/actions/ask.site_agent</span>
+                <li className="border hairline-soft px-4 py-8 text-center font-mono text-[12px] text-[var(--text-3)]">
+                  no readers at the counter yet — try{" "}
+                  <span className="text-[var(--accent)]">curl -X POST /api/actions/ask.site_agent</span>
                 </li>
               )}
               {feed.map((item, i) => (
@@ -200,7 +205,7 @@ export function Dashboard() {
                 >
                   <div className="flex items-center gap-3">
                     <FeedTag kind={item.kind} />
-                    <span className="font-mono text-[13px] text-zinc-950">
+                    <span className="font-mono text-[13px] text-[var(--text)]">
                       {item.data.action_id}
                     </span>
                     <span className="font-mono text-[11px] text-[var(--text-4)]">
@@ -222,9 +227,9 @@ export function Dashboard() {
 
           <div className="col-span-12 bg-[var(--bg)] p-6 lg:col-span-7">
             <div className="flex items-baseline justify-between">
-              <div className="label text-[var(--text-3)]">Revenue by action</div>
+              <div className="label">By Edition</div>
               <div className="font-mono text-[11px] text-[var(--text-4)]">
-                {(stats?.by_action ?? []).length} actions
+                {(stats?.by_action ?? []).length} action{(stats?.by_action ?? []).length === 1 ? "" : "s"}
               </div>
             </div>
             {!stats || stats.by_action.length === 0 ? (
@@ -236,17 +241,17 @@ export function Dashboard() {
                 {stats.by_action.map((a) => (
                   <li key={a.action_id} className="border-b hairline pb-3 last:border-b-0">
                     <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[13px] text-zinc-950">
+                      <span className="font-mono text-[13px] text-[var(--text)]">
                         {a.action_id}
                       </span>
                       <span className="font-mono text-[12px] tabular text-[var(--text-2)]">
                         <span className="text-[var(--text-4)]">{a.count} call{a.count === 1 ? "" : "s"} · </span>
-                        <span className="text-zinc-950">{formatSats(a.total_msats)}</span>
+                        <span className="text-[var(--text)]">{formatSats(a.total_msats)}</span>
                       </span>
                     </div>
                     <div className="mt-2 h-[2px] bg-[var(--line)] overflow-hidden">
                       <div
-                        className="h-full bg-zinc-950 transition-all"
+                        className="h-full bg-[var(--accent)] transition-all"
                         style={{ width: `${(a.total_msats / maxByAction) * 100}%` }}
                       />
                     </div>
@@ -261,9 +266,9 @@ export function Dashboard() {
         <div className="border-b hairline py-10">
           <div className="flex items-baseline justify-between pb-5">
             <div>
-              <div className="label text-[var(--text-3)]">Receipts</div>
+              <div className="label">Confirmed Sales</div>
               <div className="mt-1 font-mono text-[12px] text-[var(--text-4)]">
-                {stats?.receipts.length ?? 0} signed entries · click to inspect
+                {stats?.receipts.length ?? 0} signed receipts · click for the fine print
               </div>
             </div>
           </div>
@@ -293,8 +298,10 @@ export function Dashboard() {
         </div>
 
         <div className="flex items-center justify-between py-6 text-[12px]">
-          <div className="font-mono text-[var(--text-4)]">tollgate / 2026</div>
-          <div className="label text-[var(--text-4)]">Live operations · v0.1</div>
+          <div className="font-mono text-[var(--text-4)]">
+            the halving gazette · circulation desk · est. 2009
+          </div>
+          <div className="label">Numbers do not lie. Editors do.</div>
         </div>
       </div>
     </main>
@@ -305,10 +312,11 @@ export function Dashboard() {
 
 function Mark() {
   return (
-    <span className="grid size-6 place-items-center border hairline-2 bg-zinc-950 text-white">
-      <svg viewBox="0 0 16 16" className="size-3.5" fill="currentColor">
-        <path d="M3 2h1v12H3zM12 2h1v12h-1zM6 5h4v6H6z" />
-      </svg>
+    <span
+      className="grid size-7 place-items-center border hairline bg-[var(--accent)]"
+      style={{ color: "var(--bg)" }}
+    >
+      <span className="masthead text-[15px] leading-none">G</span>
     </span>
   );
 }
@@ -317,7 +325,7 @@ function Metric({ label, value, sub }: { label: string; value: string; sub?: str
   return (
     <div className="border-r hairline last:border-r-0 px-6 py-6">
       <div className="label text-[var(--text-3)]">{label}</div>
-      <div className="mt-3 font-mono text-2xl tabular text-zinc-950">{value}</div>
+      <div className="mt-3 font-mono text-2xl tabular text-[var(--text)]">{value}</div>
       {sub && <div className="mt-1 font-mono text-[11px] text-[var(--text-4)]">{sub}</div>}
     </div>
   );
@@ -326,8 +334,11 @@ function Metric({ label, value, sub }: { label: string; value: string; sub?: str
 function FeedTag({ kind }: { kind: "challenge" | "receipt" }) {
   if (kind === "receipt") {
     return (
-      <span className="inline-flex items-center gap-1 border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-800">
-        ok
+      <span
+        className="inline-flex items-center gap-1 border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em]"
+        style={{ borderColor: "#3d5a2a", background: "#e6e8c8", color: "#3d5a2a" }}
+      >
+        sold
       </span>
     );
   }
@@ -357,13 +368,13 @@ function ReceiptRow({
         }`}
         onClick={onToggle}
       >
-        <div className="col-span-3 font-mono text-[13px] text-zinc-950">
+        <div className="col-span-3 font-mono text-[13px] text-[var(--text)]">
           {receipt.receipt_id}
         </div>
         <div className="col-span-3 font-mono text-[13px] text-[var(--text-2)]">
           {receipt.action_id}
         </div>
-        <div className="col-span-2 font-mono text-[13px] tabular text-zinc-950">
+        <div className="col-span-2 font-mono text-[13px] tabular text-[var(--text)]">
           {formatSats(receipt.amount_msats)}
         </div>
         <div className="col-span-2 font-mono text-[12px] text-[var(--text-3)]">
