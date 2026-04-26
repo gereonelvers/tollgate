@@ -1,39 +1,35 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import http from "node:http";
+import crypto from "node:crypto";
+import { exec } from "node:child_process";
 import { NWCClient } from "@getalby/sdk";
 
 /**
  * Wallet config the MCP server uses to pay/receive on the agent's behalf.
  *
  * Loaded in this order:
- *   1. ~/.tollgate/wallet.json (or $TOLLGATE_DATA_DIR/wallet.json)
- *      — written by `npx @agents402/setup` after the user pairs a wallet
- *      from the agents402 web app.
+ *   1. ~/.tollgate/wallet.json (or $TOLLGATE_DATA_DIR/wallet.json) — written
+ *      by an in-band setup tool (`wallet_setup_nwc`, `wallet_setup_browser`)
+ *      or by `npx @agents402/setup`.
  *   2. AGENT_NWC_URL env var — backward-compat path for users who set up
- *      manually before the CLI flow existed.
+ *      manually before the in-band flow existed.
  *
  * Supported providers: "nwc", "spark", "dev-fake".
  */
 
-type WalletConfig =
-  | {
-      provider: "nwc";
-      nwc_url: string;
-      label?: string;
-    }
-  | {
-      provider: "spark";
-      spark_mnemonic: string;
-      spark_network?: "MAINNET" | "TESTNET" | "SIGNET" | "REGTEST" | "LOCAL";
-      spark_address?: string;
-      spark_identity_pubkey?: string;
-      label?: string;
-    }
-  | {
-      provider: "dev-fake";
-      label?: string;
-    };
+type NwcConfig = { provider: "nwc"; nwc_url: string; label?: string };
+type SparkConfig = {
+  provider: "spark";
+  spark_mnemonic: string;
+  spark_network?: "MAINNET" | "TESTNET" | "SIGNET" | "REGTEST" | "LOCAL";
+  spark_address?: string;
+  spark_identity_pubkey?: string;
+  label?: string;
+};
+type DevFakeConfig = { provider: "dev-fake"; label?: string };
+type WalletConfig = NwcConfig | SparkConfig | DevFakeConfig;
 
 let cachedConfig: WalletConfig | null = null;
 let nwcClient: NWCClient | null = null;
@@ -43,24 +39,30 @@ let sparkPromise: Promise<unknown> | null = null;
 // In-memory dev-fake balance, for the offline path.
 let devFakeBalanceMsats = 100_000;
 
+function dataDir(): string {
+  return process.env.TOLLGATE_DATA_DIR || path.join(os.homedir(), ".tollgate");
+}
 function configPath(): string {
-  const dir = process.env.TOLLGATE_DATA_DIR || path.join(os.homedir(), ".tollgate");
-  return path.join(dir, "wallet.json");
+  return path.join(dataDir(), "wallet.json");
+}
+
+function readConfigFromDisk(): WalletConfig | null {
+  const p = configPath();
+  if (!fs.existsSync(p)) return null;
+  const raw = JSON.parse(fs.readFileSync(p, "utf8")) as WalletConfig;
+  if (!raw?.provider) throw new Error("missing 'provider'");
+  return raw;
 }
 
 function loadConfig(): WalletConfig {
   if (cachedConfig) return cachedConfig;
 
-  // Disk first.
   const p = configPath();
   if (fs.existsSync(p)) {
     try {
-      const raw = JSON.parse(fs.readFileSync(p, "utf8")) as WalletConfig;
-      if (!raw?.provider) throw new Error("missing 'provider'");
+      const raw = readConfigFromDisk()!;
       cachedConfig = raw;
-      process.stderr.write(
-        `wallet: loaded ${p} (provider=${raw.provider})\n`,
-      );
+      process.stderr.write(`wallet: loaded ${p} (provider=${raw.provider})\n`);
       return raw;
     } catch (e) {
       throw new Error(
@@ -80,8 +82,59 @@ function loadConfig(): WalletConfig {
   }
 
   throw new Error(
-    `No wallet configured. Run 'npx @agents402/setup' to pair a wallet, or set AGENT_NWC_URL in your MCP env.`,
+    `No wallet configured. Call wallet_setup_nwc or wallet_setup_browser to pair one, or run 'npx @agents402/setup' externally.`,
   );
+}
+
+function clearWalletCache(): void {
+  cachedConfig = null;
+  nwcClient = null;
+  sparkPromise = null;
+}
+
+function writeConfig(cfg: WalletConfig): void {
+  fs.mkdirSync(dataDir(), { recursive: true });
+  fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2), { mode: 0o600 });
+  clearWalletCache();
+}
+
+/* ------------------------------------------------------------------ */
+/* Status                                                              */
+/* ------------------------------------------------------------------ */
+
+export type WalletStatus =
+  | { configured: false; reason: "no_config"; config_path: string }
+  | { configured: true; provider: WalletConfig["provider"]; label?: string; source: "disk" | "env" };
+
+export function isWalletConfigured(): boolean {
+  if (cachedConfig) return true;
+  if (fs.existsSync(configPath())) return true;
+  if (process.env.AGENT_NWC_URL) return true;
+  return false;
+}
+
+export function getWalletStatus(): WalletStatus {
+  try {
+    if (fs.existsSync(configPath())) {
+      const raw = readConfigFromDisk()!;
+      return {
+        configured: true,
+        provider: raw.provider,
+        label: raw.label,
+        source: "disk",
+      };
+    }
+  } catch (e) {
+    return {
+      configured: false,
+      reason: "no_config",
+      config_path: configPath(),
+    };
+  }
+  if (process.env.AGENT_NWC_URL) {
+    return { configured: true, provider: "nwc", source: "env" };
+  }
+  return { configured: false, reason: "no_config", config_path: configPath() };
 }
 
 /* ------------------------------------------------------------------ */
@@ -109,12 +162,234 @@ async function getSparkWallet(): Promise<unknown> {
     const networkName = (cfg.spark_network ?? "MAINNET") as keyof typeof Network;
     const { wallet } = await SparkWallet.initialize({
       mnemonicOrSeed: cfg.spark_mnemonic,
-      // Network[name] returns the numeric enum; the SDK accepts both.
       options: { network: networkName as unknown as never },
     });
     return wallet;
   })();
   return sparkPromise;
+}
+
+/* ------------------------------------------------------------------ */
+/* Save helpers used by setup tools                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Save an NWC wallet. Validates by calling getBalance against the URL before
+ * persisting — a malformed or revoked URI fails fast instead of silently.
+ */
+export async function saveNwcConfig(opts: {
+  nwc_url: string;
+  label?: string;
+}): Promise<{ balance_msats: number }> {
+  const probe = new NWCClient({ nostrWalletConnectUrl: opts.nwc_url });
+  let balance_msats: number;
+  try {
+    const r = await probe.getBalance();
+    balance_msats = r.balance;
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`NWC URL did not work: ${msg}`);
+  }
+  writeConfig({ provider: "nwc", nwc_url: opts.nwc_url, label: opts.label });
+  return { balance_msats };
+}
+
+/**
+ * Save a Spark wallet from raw config (used by the browser-pairing listener).
+ */
+export function saveSparkConfig(cfg: Omit<SparkConfig, "provider">): void {
+  writeConfig({ provider: "spark", ...cfg });
+}
+
+/* ------------------------------------------------------------------ */
+/* Browser pairing listener                                            */
+/* ------------------------------------------------------------------ */
+
+type PairingState = {
+  port: number;
+  state: string;
+  url: string;
+  startedAt: number;
+  receivedAt?: number;
+  error?: string;
+  server: http.Server;
+  timer: NodeJS.Timeout;
+};
+
+let activePairing: PairingState | null = null;
+
+const DEFAULT_WEB_URL = "https://wallet.faregate.org";
+const PAIRING_TIMEOUT_MS = 5 * 60 * 1000;
+
+function corsHeaders(origin: string | undefined): Record<string, string> {
+  return {
+    "access-control-allow-origin": origin || "*",
+    "access-control-allow-methods": "POST, OPTIONS, GET",
+    "access-control-allow-headers": "content-type, x-agents402-state",
+    "access-control-max-age": "600",
+    vary: "Origin",
+  };
+}
+
+function openBrowser(url: string): void {
+  const platform = process.platform;
+  const cmd =
+    platform === "darwin"
+      ? `open "${url}"`
+      : platform === "win32"
+        ? `start "" "${url}"`
+        : `xdg-open "${url}"`;
+  exec(cmd, () => {
+    // best-effort; ignore failures (the agent surfaces the URL anyway).
+  });
+}
+
+export async function startBrowserPairing(opts?: {
+  web_url?: string;
+}): Promise<{ url: string; state: string; port: number; web_url: string }> {
+  if (activePairing) {
+    return {
+      url: activePairing.url,
+      state: activePairing.state,
+      port: activePairing.port,
+      web_url: opts?.web_url ?? process.env.AGENTS402_WEB_URL ?? DEFAULT_WEB_URL,
+    };
+  }
+
+  const state = crypto.randomBytes(16).toString("hex");
+  const webUrl = opts?.web_url ?? process.env.AGENTS402_WEB_URL ?? DEFAULT_WEB_URL;
+
+  const server = http.createServer((req, res) => {
+    const origin = req.headers.origin as string | undefined;
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, corsHeaders(origin));
+      res.end();
+      return;
+    }
+    if (!req.url?.startsWith("/cb")) {
+      res.writeHead(404, corsHeaders(origin));
+      res.end("not found");
+      return;
+    }
+    if (req.method === "GET") {
+      res.writeHead(200, { "content-type": "text/plain", ...corsHeaders(origin) });
+      res.end("agents402-mcp pairing listener ready\n");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.writeHead(405, corsHeaders(origin));
+      res.end("method not allowed");
+      return;
+    }
+
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      try {
+        const stateHeader = (req.headers["x-agents402-state"] as string | undefined) ?? "";
+        if (stateHeader !== state) {
+          res.writeHead(403, { "content-type": "text/plain", ...corsHeaders(origin) });
+          res.end("state token mismatch");
+          if (activePairing) activePairing.error = "state_mismatch";
+          return;
+        }
+        const cfg = JSON.parse(body) as WalletConfig;
+        if (!cfg.provider) throw new Error("missing 'provider'");
+        writeConfig(cfg);
+        res.writeHead(200, { "content-type": "text/plain", ...corsHeaders(origin) });
+        res.end("paired");
+        if (activePairing) {
+          activePairing.receivedAt = Date.now();
+          // Close the server soon — let the response flush first.
+          setTimeout(() => activePairing?.server.close(), 100);
+        }
+        process.stderr.write(
+          `wallet: paired via browser (provider=${cfg.provider})\n`,
+        );
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        res.writeHead(400, { "content-type": "text/plain", ...corsHeaders(origin) });
+        res.end(msg);
+        if (activePairing) activePairing.error = msg;
+      }
+    });
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const addr = server.address();
+  const port = typeof addr === "object" && addr ? addr.port : 0;
+  const callback = `http://127.0.0.1:${port}/cb`;
+  const url = `${webUrl}/setup/new?callback=${encodeURIComponent(callback)}&state=${state}`;
+
+  const timer = setTimeout(() => {
+    if (activePairing && !activePairing.receivedAt) {
+      activePairing.error = "timeout";
+      activePairing.server.close();
+      activePairing = null;
+    }
+  }, PAIRING_TIMEOUT_MS);
+  // Don't keep the Node process alive solely for the listener.
+  timer.unref();
+
+  activePairing = { port, state, url, startedAt: Date.now(), server, timer };
+  server.on("close", () => {
+    if (activePairing?.server === server) {
+      clearTimeout(activePairing.timer);
+      // Keep activePairing around briefly so getBrowserPairingStatus can
+      // report the result, then null out next call after success.
+    }
+  });
+
+  // Fire-and-forget browser launch.
+  openBrowser(url);
+
+  return { url, state, port, web_url: webUrl };
+}
+
+export type PairingStatus =
+  | { active: false; configured: boolean }
+  | { active: true; status: "waiting" | "linked" | "failed"; url: string; error?: string; configured: boolean };
+
+export function getBrowserPairingStatus(): PairingStatus {
+  const configured = isWalletConfigured();
+  if (!activePairing) return { active: false, configured };
+  if (activePairing.error) {
+    const out: PairingStatus = {
+      active: true,
+      status: "failed",
+      url: activePairing.url,
+      error: activePairing.error,
+      configured,
+    };
+    activePairing = null;
+    return out;
+  }
+  if (activePairing.receivedAt) {
+    const out: PairingStatus = {
+      active: true,
+      status: "linked",
+      url: activePairing.url,
+      configured: true,
+    };
+    activePairing = null;
+    return out;
+  }
+  return {
+    active: true,
+    status: "waiting",
+    url: activePairing.url,
+    configured,
+  };
+}
+
+export function cancelBrowserPairing(): { cancelled: boolean } {
+  if (!activePairing) return { cancelled: false };
+  activePairing.server.close();
+  activePairing = null;
+  return { cancelled: true };
 }
 
 /* ------------------------------------------------------------------ */

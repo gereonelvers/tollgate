@@ -8,3 +8,4 @@ dist/
 data/
 *.db
 *.db-journal
+.npmrc

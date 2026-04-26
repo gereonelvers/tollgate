@@ -17,7 +17,16 @@ import {
   putCachedRaterDiversity,
 } from "./db.js";
 import { parseChallengeFromResponse, buildAuthorizationHeader } from "./l402-client.js";
-import { payInvoice, getBalance } from "./wallet.js";
+import {
+  payInvoice,
+  getBalance,
+  isWalletConfigured,
+  getWalletStatus,
+  saveNwcConfig,
+  startBrowserPairing,
+  getBrowserPairingStatus,
+  cancelBrowserPairing,
+} from "./wallet.js";
 import {
   getAgentNostrKey,
   buildFeedbackTemplate,
@@ -200,6 +209,7 @@ server.tool(
       ),
   },
   async ({ url, action_id, input, purpose }) => {
+    if (!isWalletConfigured()) return needsSetupResult();
     const manifest = await fetchManifest(url);
     if (!manifest) {
       return errorResult({
@@ -575,7 +585,7 @@ server.tool(
         ? Math.max(0, policy.daily_budget_msats - summary.total_msats)
         : null;
     let balance_msats: number | null = null;
-    if (include_balance) {
+    if (include_balance && isWalletConfigured()) {
       try {
         balance_msats = (await getBalance()).balance_msats;
       } catch (e: unknown) {
@@ -616,6 +626,182 @@ function errorResult(payload: object) {
     content: [{ type: "text" as const, text: JSON.stringify(payload, null, 2) }],
   };
 }
+
+/**
+ * Returned by any wallet-needing tool when no wallet is configured. The
+ * payload is structured so the agent can deterministically render the
+ * choice to the user and call the matching setup tool.
+ */
+function needsSetupResult() {
+  return {
+    isError: true,
+    content: [
+      {
+        type: "text" as const,
+        text: JSON.stringify(
+          {
+            error: "wallet_not_configured",
+            needs_setup: true,
+            human_message:
+              "I need a Lightning wallet configured before I can pay this paywall. Two ways to set one up:\n  • Paste a Nostr Wallet Connect URI you already have (Alby, Coinos, Primal, ln.bot, etc.) — call wallet_setup_nwc with the URI.\n  • Or have me open the browser to create a self-custodial wallet (Spark) with a small starter grant — call wallet_setup_browser, finish the flow in the tab, then wallet_setup_check.",
+            next_tools: ["wallet_setup_nwc", "wallet_setup_browser"],
+          },
+          null,
+          2,
+        ),
+      },
+    ],
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* wallet_status                                                       */
+/* ------------------------------------------------------------------ */
+server.tool(
+  "wallet_status",
+  "Report whether a wallet is configured and how (provider, label, source). Call this whenever you're unsure if you can pay — every wallet-needing tool refuses with a structured 'needs_setup' response when no wallet is set up.",
+  {},
+  async () => {
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(getWalletStatus(), null, 2),
+        },
+      ],
+    };
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* wallet_setup_nwc                                                    */
+/* ------------------------------------------------------------------ */
+server.tool(
+  "wallet_setup_nwc",
+  "Pair a wallet by pasting a Nostr Wallet Connect URI. Validates the URI by calling getBalance against the wallet, then writes ~/.tollgate/wallet.json. Use this when the user already has a Lightning wallet that supports NWC (Alby, Coinos, Primal, ln.bot, Mutiny, Phoenix-with-NWC). For users without a wallet, prefer wallet_setup_browser.",
+  {
+    nwc_url: z
+      .string()
+      .describe("A nostr+walletconnect:// URI obtained from the user's existing wallet."),
+    label: z
+      .string()
+      .max(80)
+      .optional()
+      .describe("Optional human-readable label, e.g. 'Alby — agent budget'."),
+  },
+  async ({ nwc_url, label }) => {
+    try {
+      const r = await saveNwcConfig({ nwc_url, label });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                status: "linked",
+                provider: "nwc",
+                label,
+                balance_msats: r.balance_msats,
+                next: "You can now retry whatever paid action triggered setup.",
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (e: unknown) {
+      return errorResult({
+        error: "nwc_setup_failed",
+        detail: e instanceof Error ? e.message : String(e),
+        hint: "Double-check the URI is intact (starts with nostr+walletconnect:// and includes a relay= param). Some wallets revoke connections after a few minutes — regenerate one and try again.",
+      });
+    }
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* wallet_setup_browser                                                */
+/* ------------------------------------------------------------------ */
+server.tool(
+  "wallet_setup_browser",
+  "Open the user's browser to wallet.faregate.org so they can create a self-custodial Spark wallet (with a sponsor faucet for the first ~50 sats). Returns a URL the user should visit; this MCP also opens the browser automatically. The page POSTs the resulting wallet config back to a localhost listener this MCP just bound. After the user finishes the flow, call wallet_setup_check to confirm.",
+  {
+    web_url: z
+      .string()
+      .optional()
+      .describe(
+        "Override the web origin (defaults to https://wallet.faregate.org or AGENTS402_WEB_URL env). For local dev: http://localhost:3040.",
+      ),
+  },
+  async ({ web_url }) => {
+    try {
+      const r = await startBrowserPairing({ web_url });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                status: "browser_opened",
+                url: r.url,
+                listening_port: r.port,
+                instruction:
+                  "Tell the user to complete the wallet creation in their browser. The page will POST the config to this MCP's localhost listener automatically. Then call wallet_setup_check to confirm. Times out after 5 minutes.",
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    } catch (e: unknown) {
+      return errorResult({
+        error: "browser_pairing_start_failed",
+        detail: e instanceof Error ? e.message : String(e),
+      });
+    }
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* wallet_setup_check                                                  */
+/* ------------------------------------------------------------------ */
+server.tool(
+  "wallet_setup_check",
+  "Poll the status of an in-progress browser pairing. Status will be 'waiting' until the user completes the browser flow, then 'linked'. If the user closed the tab or got stuck, status is 'failed' or active=false.",
+  {},
+  async () => {
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(getBrowserPairingStatus(), null, 2),
+        },
+      ],
+    };
+  },
+);
+
+/* ------------------------------------------------------------------ */
+/* wallet_setup_cancel                                                 */
+/* ------------------------------------------------------------------ */
+server.tool(
+  "wallet_setup_cancel",
+  "Cancel an in-progress browser pairing — closes the localhost listener so the user knows it's no longer waiting. Use when the user changes their mind or wants to switch to wallet_setup_nwc.",
+  {},
+  async () => {
+    const r = cancelBrowserPairing();
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(r, null, 2),
+        },
+      ],
+    };
+  },
+);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

@@ -1,15 +1,30 @@
 {
-  "name": "tollgate-mcp",
+  "name": "@agents402/mcp",
   "version": "0.1.0",
-  "private": true,
+  "description": "MCP server that lets an AI agent pay for L402 paid actions over Lightning. Includes in-band wallet setup (paste NWC or open browser to create a self-custodial Spark wallet) and decentralized Nostr-based service reputation.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gereonelvers/tollgate.git",
+    "directory": "mcp/tollgate-mcp"
+  },
+  "homepage": "https://agents402.org",
   "type": "module",
   "bin": {
-    "tollgate-mcp": "dist/index.js"
+    "agents402-mcp": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -p .",
     "dev": "tsc -p . --watch",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "prepublishOnly": "tsc -p ."
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@buildonspark/spark-sdk": "^0.7.15",
