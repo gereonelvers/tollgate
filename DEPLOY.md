@@ -58,6 +58,25 @@ Repeat the process with these settings:
 **Custom domain (agents402.org):**
 - Same DNS pattern as above.
 
+## Service 3: wallet onboarding (apps/web)
+
+Same process again with:
+
+**Settings → Source**
+- Root Directory: `apps/web`
+- Watch Paths: `apps/web/**`
+
+**Settings → Variables**
+- `SPONSOR_NWC_URL=nostr+walletconnect://...` — the wallet that pays
+  out faucet grants. Without this, the faucet self-disables with a
+  helpful 503 error and the UI tells the user. Nothing breaks.
+- Optional: `SPONSOR_MAX_GRANT_MSATS` (default 50000 = 50 sats).
+- Optional: `SPONSOR_COOLDOWN_MS` (default 24 h per IP / wallet identifier).
+
+**Custom domain** — `wallet.faregate.org` is the natural choice; or
+point `faregate.org` itself here if you want the wallet UX as the
+front door.
+
 ## What Railway will do on every push
 
 For each service:
