@@ -77,6 +77,45 @@ Same process again with:
 point `faregate.org` itself here if you want the wallet UX as the
 front door.
 
+## Service 4: demo publisher (apps/publisher)
+
+A real Tollgate-enabled site so anyone with `@agents402/mcp` can `discover`
++ `pay_and_invoke` against a live Lightning paywall. Two paid actions
+(`ask.site_agent`, 3 sats; `extract.structured`, 1 sat), a `/.well-known/agents402.json`
+manifest, and a public dashboard that shows sats arriving in real time —
+useful to leave open during a demo.
+
+**Settings → Source**
+- Root Directory: `apps/publisher`
+- Watch Paths: `apps/publisher/**`
+
+**Settings → Variables**
+- `PUBLISHER_BASE_URL=https://demo.faregate.org` — used in the manifest
+  so action endpoints resolve to absolute URLs the agent can hit.
+- `PUBLISHER_NWC_URL=nostr+walletconnect://...` — receiving wallet that
+  issues invoices. Use a wallet *different* from the sponsor (so the
+  demo flow looks like a real cross-wallet payment). The
+  `fancycobra21@primal.net` Primal wallet works well here.
+- `PUBLISHER_LIGHTNING_ADDRESS=fancycobra21@primal.net` — surfaced in
+  the manifest's `service.lightning_address`. Optional but nice.
+- `L402_SECRET=<long random>` — HMAC key for L402 tokens. Generate with
+  `openssl rand -hex 32`. **Do not** leave at the dev default in prod.
+- `ANTHROPIC_API_KEY=sk-ant-...` — powers the `ask.site_agent` action.
+  Without it, that action returns a stub answer (still demonstrable but
+  less impressive).
+- Optional: `TOLLGATE_MOCK_LIGHTNING=1` — bypasses real Lightning and
+  auto-settles invoices in-memory. Useful for a smoke test before you
+  hand over real sats. Leave **unset** for the real demo.
+
+**Custom domain** — `demo.faregate.org` is the natural choice. Add CNAME
+`demo` → `<railway-target>.up.railway.app`. Wait for cert provisioning.
+
+**Sanity check after deploy**
+```sh
+curl -s https://demo.faregate.org/.well-known/agents402.json | jq '.actions[].id'
+# → "ask.site_agent"  "extract.structured"
+```
+
 ## What Railway will do on every push
 
 For each service:
