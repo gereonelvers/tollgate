@@ -32,7 +32,7 @@ type WalletConfig = {
   label?: string;
 };
 
-const DEFAULT_WEB_URL = "http://localhost:3040";
+const DEFAULT_WEB_URL = "https://wallet.faregate.org";
 const WEB_URL = process.env.AGENTS402_WEB_URL || DEFAULT_WEB_URL;
 const TIMEOUT_MS = Number(process.env.AGENTS402_SETUP_TIMEOUT_MS ?? 5 * 60 * 1000);
 const PORT = Number(process.env.AGENTS402_SETUP_PORT ?? 0);

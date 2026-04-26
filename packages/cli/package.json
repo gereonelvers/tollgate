@@ -1,14 +1,29 @@
 {
-  "name": "@agents402/cli",
+  "name": "@agents402/setup",
   "version": "0.1.0",
-  "private": true,
+  "description": "Pair a self-custodial Lightning wallet from the agents402 web app to your local MCP server. Used by `npx @agents402/setup`.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gereonelvers/tollgate.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://agents402.org",
   "type": "module",
   "bin": {
     "agents402-setup": "dist/setup.js"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -p .",
-    "setup": "node dist/setup.js"
+    "setup": "node dist/setup.js",
+    "prepublishOnly": "tsc -p ."
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
