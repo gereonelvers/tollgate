@@ -134,6 +134,18 @@ export function WalletDashboard() {
       <section className="border-b hairline">
         <div className="mx-auto max-w-[1200px] px-6 sm:px-10">
           <div className="flex items-center justify-between border-b hairline py-3">
+            <div className="label text-[var(--text-3)]">Activity</div>
+            <div className="label text-[var(--text-4)]">last 20 · live from your wallet provider</div>
+          </div>
+          <div className="py-10">
+            <PaymentHistory wallet={wallet} />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b hairline">
+        <div className="mx-auto max-w-[1200px] px-6 sm:px-10">
+          <div className="flex items-center justify-between border-b hairline py-3">
             <div className="label text-[var(--text-3)]">Spend policy</div>
             <div className="label text-[var(--text-4)]">enforced in code, not by the model</div>
           </div>
@@ -219,6 +231,190 @@ async function loadNwcBalance(nwcUrl: string): Promise<Balance> {
 async function loadSparkBalance(stored: StoredWallet): Promise<number> {
   const { getSparkBalance } = await import("@/lib/spark");
   return getSparkBalance(stored);
+}
+
+type WalletTx = {
+  id: string;
+  direction: "in" | "out";
+  amount_msats: number;
+  fees_msats?: number;
+  description?: string;
+  created_at: number;
+  state: "settled" | "pending" | "failed";
+};
+
+async function loadNwcHistory(nwcUrl: string, limit = 20): Promise<WalletTx[]> {
+  const { NWCClient } = await import("@getalby/sdk");
+  const c = new NWCClient({ nostrWalletConnectUrl: nwcUrl });
+  const r = (await c.listTransactions({ limit })) as {
+    transactions?: Array<{
+      type?: string;
+      payment_hash?: string;
+      preimage?: string;
+      invoice?: string;
+      description?: string;
+      description_hash?: string;
+      amount?: number;
+      fees_paid?: number;
+      created_at?: number;
+      settled_at?: number;
+      expires_at?: number;
+    }>;
+  };
+  const now = Math.floor(Date.now() / 1000);
+  return (r.transactions ?? []).map((t) => {
+    const created = t.settled_at ?? t.created_at ?? now;
+    const state: WalletTx["state"] = t.settled_at
+      ? "settled"
+      : (t.expires_at ?? Infinity) < now
+        ? "failed"
+        : "pending";
+    return {
+      id: String(t.payment_hash ?? t.preimage ?? created),
+      direction: t.type === "incoming" ? "in" : "out",
+      amount_msats: t.amount ?? 0,
+      fees_msats: t.fees_paid,
+      description: t.description?.trim() || undefined,
+      created_at: created,
+      state,
+    };
+  });
+}
+
+function PaymentHistory({ wallet }: { wallet: StoredWallet }) {
+  const [txs, setTxs] = useState<WalletTx[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTxs(null);
+    setErr(null);
+    if (wallet.provider === "dev-fake") {
+      // Demo wallet has no real history.
+      setTxs([]);
+      return;
+    }
+    if (wallet.provider === "nwc" && wallet.nwc_url) {
+      loadNwcHistory(wallet.nwc_url).then(
+        (r) => setTxs(r),
+        (e) => setErr(e?.message ?? String(e)),
+      );
+      return;
+    }
+    if (wallet.provider === "spark" && wallet.spark_mnemonic) {
+      (async () => {
+        const { getSparkHistory } = await import("@/lib/spark");
+        return getSparkHistory(wallet);
+      })().then(
+        (r) => setTxs(r),
+        (e) => setErr(e?.message ?? String(e)),
+      );
+      return;
+    }
+  }, [wallet]);
+
+  if (txs === null && !err) {
+    return (
+      <div className="font-mono text-[12.5px] text-[var(--text-3)]">
+        loading activity…
+      </div>
+    );
+  }
+  if (err) {
+    return (
+      <div className="border hairline bg-rose-50 px-5 py-4">
+        <div className="label text-rose-800">Couldn&apos;t load activity</div>
+        <p className="mt-2 font-mono text-[12.5px] text-rose-900">{err}</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-rose-900">
+          Some wallet providers don&apos;t expose <code>list_transactions</code>{" "}
+          over NWC. Try checking history in the wallet&apos;s native app.
+        </p>
+      </div>
+    );
+  }
+  if (!txs || txs.length === 0) {
+    return (
+      <div className="border hairline bg-[var(--surface)] px-5 py-6 text-center">
+        <div className="label text-[var(--text-3)]">No payments yet</div>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--text-2)]">
+          {wallet.provider === "dev-fake"
+            ? "Demo wallets don't track real history. Connect a real wallet to see paid actions land here."
+            : "Once your agent makes a paid call, the receipt appears here within a few seconds."}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="border hairline">
+      <div className="grid grid-cols-12 gap-2 border-b hairline bg-[var(--surface)] px-4 py-2.5 label text-[var(--text-3)]">
+        <div className="col-span-2">When</div>
+        <div className="col-span-1">Dir</div>
+        <div className="col-span-2 text-right">Amount</div>
+        <div className="col-span-6">Memo</div>
+        <div className="col-span-1 text-right">State</div>
+      </div>
+      {txs.map((t, i) => (
+        <div
+          key={t.id + i}
+          className={`grid grid-cols-12 items-center gap-2 px-4 py-3 ${
+            i < txs.length - 1 ? "border-b hairline" : ""
+          }`}
+        >
+          <div className="col-span-2 font-mono text-[12px] text-[var(--text-3)]">
+            {timeAgo(t.created_at)}
+          </div>
+          <div className="col-span-1">
+            {t.direction === "in" ? (
+              <span className="inline-flex items-center justify-center border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 font-mono text-[11px] text-emerald-800">
+                in
+              </span>
+            ) : (
+              <span className="inline-flex items-center justify-center border hairline bg-[var(--bg)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--text-2)]">
+                out
+              </span>
+            )}
+          </div>
+          <div className="col-span-2 text-right">
+            <div className="font-mono text-[14px] tabular text-zinc-950">
+              {formatSats(t.amount_msats)}
+            </div>
+            {t.fees_msats ? (
+              <div className="mt-0.5 font-mono text-[10.5px] text-[var(--text-4)] tabular">
+                + {formatSats(t.fees_msats)} fee
+              </div>
+            ) : null}
+          </div>
+          <div className="col-span-6 truncate font-mono text-[12.5px] text-[var(--text-2)]">
+            {t.description ?? <span className="italic text-[var(--text-4)]">no memo</span>}
+          </div>
+          <div className="col-span-1 text-right">
+            <StateTag state={t.state} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function StateTag({ state }: { state: WalletTx["state"] }) {
+  const cls =
+    state === "settled"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      : state === "pending"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-rose-200 bg-rose-50 text-rose-800";
+  return (
+    <span className={`inline-flex items-center border px-1.5 py-0.5 font-mono text-[10.5px] ${cls}`}>
+      {state}
+    </span>
+  );
+}
+
+function timeAgo(ts: number): string {
+  const diff = Math.floor(Date.now() / 1000) - ts;
+  if (diff < 60) return `${Math.max(0, diff)}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
 }
 
 function SponsorButton({

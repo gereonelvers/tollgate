@@ -130,6 +130,72 @@ export async function paySparkLightningInvoice(
   return { id: r.id };
 }
 
+export type WalletTx = {
+  id: string;
+  direction: "in" | "out";
+  amount_msats: number;
+  fees_msats?: number;
+  description?: string;
+  created_at: number;
+  state: "settled" | "pending" | "failed";
+};
+
+/**
+ * Spark transfer history. The SDK's getTransfers shape isn't strongly typed
+ * here; we map defensively and skip rows we can't make sense of.
+ */
+export async function getSparkHistory(stored: StoredWallet, limit = 20): Promise<WalletTx[]> {
+  if (!stored.spark_mnemonic) throw new Error("No mnemonic on this wallet");
+  const w = (await loadSparkWallet(stored.spark_mnemonic, stored.spark_network ?? "MAINNET")) as {
+    getTransfers?: (opts?: { limit?: number; offset?: number }) => Promise<unknown>;
+  };
+  if (typeof w.getTransfers !== "function") return [];
+  const raw = (await w.getTransfers({ limit })) as
+    | { transfers?: unknown[] }
+    | unknown[]
+    | null
+    | undefined;
+  const list = Array.isArray(raw) ? raw : Array.isArray(raw?.transfers) ? raw.transfers : [];
+  const txs: WalletTx[] = [];
+  for (const t of list) {
+    if (!t || typeof t !== "object") continue;
+    const o = t as Record<string, unknown>;
+    const dir =
+      (o.transferDirection as string) ??
+      (o.direction as string) ??
+      (typeof o.totalSent === "number" && o.totalSent > 0 ? "OUTGOING" : "INCOMING");
+    const sats =
+      (typeof o.totalSent === "number" && o.totalSent > 0
+        ? o.totalSent
+        : typeof o.totalReceived === "number"
+          ? o.totalReceived
+          : typeof o.amountSats === "number"
+            ? o.amountSats
+            : 0) as number;
+    const created =
+      typeof o.createdAt === "number"
+        ? Math.floor(o.createdAt / 1000)
+        : typeof o.timestamp === "number"
+          ? o.timestamp
+          : Date.parse(String(o.createdAt ?? o.timestamp ?? "")) / 1000 || Date.now() / 1000;
+    const status = String(o.status ?? "settled").toUpperCase();
+    txs.push({
+      id: String(o.id ?? o.lightningId ?? o.transferId ?? Math.random().toString(36).slice(2)),
+      direction: dir.toUpperCase().includes("OUT") || dir.toUpperCase() === "SEND" ? "out" : "in",
+      amount_msats: Math.round(sats * 1000),
+      description: typeof o.memo === "string" ? o.memo : typeof o.description === "string" ? o.description : undefined,
+      created_at: Math.floor(created),
+      state:
+        status.includes("FAIL")
+          ? "failed"
+          : status.includes("PEND") || status.includes("INIT")
+            ? "pending"
+            : "settled",
+    });
+  }
+  return txs;
+}
+
 /**
  * Pick three random word positions for a backup-confirmation challenge.
  * The user has to type back those exact words.
