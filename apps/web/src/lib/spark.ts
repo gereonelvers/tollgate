@@ -141,56 +141,62 @@ export type WalletTx = {
 };
 
 /**
- * Spark transfer history. The SDK's getTransfers shape isn't strongly typed
- * here; we map defensively and skip rows we can't make sense of.
+ * Spark transfer history. Maps WalletTransfer rows from the SDK into the
+ * unified WalletTx shape used by the wallet page.
  */
 export async function getSparkHistory(stored: StoredWallet, limit = 20): Promise<WalletTx[]> {
   if (!stored.spark_mnemonic) throw new Error("No mnemonic on this wallet");
   const w = (await loadSparkWallet(stored.spark_mnemonic, stored.spark_network ?? "MAINNET")) as {
-    getTransfers?: (opts?: { limit?: number; offset?: number }) => Promise<unknown>;
+    getTransfers?: (
+      limit?: number,
+      offset?: number,
+      createdAfter?: Date,
+      createdBefore?: Date,
+    ) => Promise<{ transfers?: unknown[] }>;
   };
   if (typeof w.getTransfers !== "function") return [];
-  const raw = (await w.getTransfers({ limit })) as
-    | { transfers?: unknown[] }
-    | unknown[]
-    | null
-    | undefined;
-  const list = Array.isArray(raw) ? raw : Array.isArray(raw?.transfers) ? raw.transfers : [];
+  // Positional args. Passing an object trips a BigInt coercion deep in the SDK.
+  const raw = await w.getTransfers(limit);
+  const list = Array.isArray(raw?.transfers) ? raw.transfers : [];
   const txs: WalletTx[] = [];
   for (const t of list) {
     if (!t || typeof t !== "object") continue;
-    const o = t as Record<string, unknown>;
-    const dir =
-      (o.transferDirection as string) ??
-      (o.direction as string) ??
-      (typeof o.totalSent === "number" && o.totalSent > 0 ? "OUTGOING" : "INCOMING");
-    const sats =
-      (typeof o.totalSent === "number" && o.totalSent > 0
-        ? o.totalSent
-        : typeof o.totalReceived === "number"
-          ? o.totalReceived
-          : typeof o.amountSats === "number"
-            ? o.amountSats
-            : 0) as number;
+    const o = t as {
+      id?: string;
+      transferDirection?: string;
+      totalValue?: number;
+      createdTime?: Date | string;
+      status?: string;
+      type?: string;
+      userRequest?: { memo?: string; description?: string; invoice?: { memo?: string } };
+    };
+    const direction = String(o.transferDirection ?? "").toUpperCase().includes("OUT") ? "out" : "in";
+    const sats = typeof o.totalValue === "number" ? o.totalValue : 0;
     const created =
-      typeof o.createdAt === "number"
-        ? Math.floor(o.createdAt / 1000)
-        : typeof o.timestamp === "number"
-          ? o.timestamp
-          : Date.parse(String(o.createdAt ?? o.timestamp ?? "")) / 1000 || Date.now() / 1000;
-    const status = String(o.status ?? "settled").toUpperCase();
+      o.createdTime instanceof Date
+        ? Math.floor(o.createdTime.getTime() / 1000)
+        : typeof o.createdTime === "string"
+          ? Math.floor(Date.parse(o.createdTime) / 1000)
+          : Math.floor(Date.now() / 1000);
+    const status = String(o.status ?? "").toUpperCase();
+    const state: WalletTx["state"] =
+      status.includes("EXPIRE") || status.includes("RETURN") || status.includes("FAIL")
+        ? "failed"
+        : status.includes("COMPLETED") || status.includes("FINALIZED")
+          ? "settled"
+          : "pending";
+    const memo =
+      o.userRequest?.memo ??
+      o.userRequest?.description ??
+      o.userRequest?.invoice?.memo ??
+      undefined;
     txs.push({
-      id: String(o.id ?? o.lightningId ?? o.transferId ?? Math.random().toString(36).slice(2)),
-      direction: dir.toUpperCase().includes("OUT") || dir.toUpperCase() === "SEND" ? "out" : "in",
-      amount_msats: Math.round(sats * 1000),
-      description: typeof o.memo === "string" ? o.memo : typeof o.description === "string" ? o.description : undefined,
-      created_at: Math.floor(created),
-      state:
-        status.includes("FAIL")
-          ? "failed"
-          : status.includes("PEND") || status.includes("INIT")
-            ? "pending"
-            : "settled",
+      id: String(o.id ?? `tx-${created}-${sats}`),
+      direction,
+      amount_msats: sats * 1000,
+      description: typeof memo === "string" && memo.trim() ? memo.trim() : undefined,
+      created_at: created,
+      state,
     });
   }
   return txs;
