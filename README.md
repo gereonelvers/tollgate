@@ -13,6 +13,7 @@ Built for [Hack-Nation × Spiral](https://spiral.xyz) "Earn in the Agent Economy
 | [**agents402.org**](https://agents402.org) | The open protocol — spec, concepts, conformance, examples | `apps/protocol-site` |
 | [**faregate.org**](https://faregate.org) | Corporate / marketing site — what Faregate sells to publishers | `apps/corporate-site` |
 | [**wallet.faregate.org**](https://wallet.faregate.org) | Browser-pairing flow for agents to create a Spark wallet | `apps/web` |
+| [**demo.faregate.org**](https://demo.faregate.org) | Live demo publisher — manifest, paid actions, real-time dashboard at `/dashboard` | `apps/publisher` |
 
 ## Repo layout
 
