@@ -17,8 +17,10 @@ export const metadata = { title: "Reputation · agents402" };
 const TOC = [
   { id: "design", text: "Design goals" },
   { id: "primitive", text: "The primitive: signed feedback" },
-  { id: "anchoring", text: "Receipt anchoring (anti-Sybil)" },
+  { id: "anchoring", text: "Receipt anchoring (anti-Sybil layer 1)" },
+  { id: "diversity", text: "Rater diversity (anti-Sybil layer 2)" },
   { id: "formula", text: "Aggregation formula" },
+  { id: "limits", text: "Honest limits" },
   { id: "discovery", text: "How agents fetch it" },
   { id: "privacy", text: "Privacy" },
 ];
@@ -122,39 +124,104 @@ export default function Page() {
         self-defending — gaming it transfers wealth to the service being gamed.
       </Callout>
 
-      <H2 id="formula">Aggregation formula</H2>
+      <H2 id="diversity">Rater diversity (anti-Sybil layer 2)</H2>
       <P>
-        Given a set of verified feedback events for a service, the network reputation is:
+        Receipt-anchoring stops impersonation; it doesn&apos;t stop a publisher from
+        rating themselves with fake buyer identities. To meaningfully shift a score a
+        publisher would need <em>many</em> ratings — and aggregators can detect that
+        attack pattern by looking at <strong>rater history breadth</strong>.
+      </P>
+      <P>
+        For each rater whose feedback contributes to a service&apos;s score,
+        aggregators query the same Nostr filter against the rater&apos;s pubkey to
+        count distinct services they&apos;ve rated. Each rater gets a{" "}
+        <InlineCode>diversity_weight</InlineCode> ∈ [0, 1]:
       </P>
       <CodeBlock lang="text">
-{`weighted_score = Σ(amount_msats[i] × score[i]) / Σ(amount_msats[i])`}
+{`diversity_weight(rater) =
+   0                           if distinct_services < min_to_count
+   1                           if distinct_services >= full_at
+   linear ramp between them    otherwise
+
+defaults: min_to_count = 1, full_at = 3
+   distinct = 1 → 0.33   (single-target rater)
+   distinct = 2 → 0.67
+   distinct = 3+ → 1.00  (full weight)
+
+strict mode: min_to_count = 3
+   distinct < 3 → 0     (rater dropped entirely)
+   distinct ≥ 3 → 1.00`}
       </CodeBlock>
       <P>
-        High-payment ratings dominate; a single 100-sat-paid 0.95 dwarfs ten 1-sat-paid
-        0.10s. Aggregators MAY also report:
+        A publisher trying to game its own reputation must now operate buyer identities
+        that have <em>also</em> rated other unrelated services. That&apos;s either real
+        organic activity (which legitimizes the rating) or further capital expenditure
+        on payments to other services (which costs them more bitcoin per fake rating).
+        Either way, the attack gets steeper.
+      </P>
+      <Callout variant="note" title="Configurable per agent">
+        Each agent picks its own thresholds via{" "}
+        <InlineCode>rater_min_distinct_services</InlineCode> and{" "}
+        <InlineCode>rater_full_weight_at_distinct_services</InlineCode> in policy.
+        Strict-mode agents (min = 3) ignore brand-new raters; lenient-mode agents
+        (min = 1) still count them at reduced weight.
+      </Callout>
+
+      <H2 id="formula">Aggregation formula</H2>
+      <P>
+        Given a set of verified feedback events plus per-rater diversity weights, the
+        canonical reputation is:
+      </P>
+      <CodeBlock lang="text">
+{`weighted_score = Σ(amount[i] × score[i] × diversity_weight[rater[i]])
+                 ─────────────────────────────────────────────────────
+                       Σ(amount[i] × diversity_weight[rater[i]])`}
+      </CodeBlock>
+      <P>
+        Diversity-weighted, amount-weighted average. Aggregators also expose{" "}
+        <InlineCode>unweighted_score</InlineCode> (no diversity weight, for comparison)
+        and <InlineCode>effective_sample_size</InlineCode> (Σ of weights — how many
+        &ldquo;trustworthy&rdquo; ratings effectively contribute). Other reported
+        signals:
       </P>
       <Table
         headers={["Field", "Meaning"]}
         rows={[
           [
             <InlineCode key="ws">weighted_score</InlineCode>,
-            "0–1; the canonical reputation for the service.",
+            "0–1; the canonical diversity-weighted reputation. The number to act on.",
+          ],
+          [
+            <InlineCode key="us">unweighted_score</InlineCode>,
+            "Σ(amount × score) / Σ(amount), no diversity weighting. For audit / comparison.",
           ],
           [
             <InlineCode key="fa">flat_average</InlineCode>,
-            "Σ(score) / N; secondary signal — useful when amounts are uniform.",
+            "Σ(score) / N; useful when amounts are uniform.",
           ],
           [
             <InlineCode key="ss">sample_size</InlineCode>,
             "Number of distinct feedback events (after replaceable dedup).",
           ],
           [
+            <InlineCode key="ess">effective_sample_size</InlineCode>,
+            "Σ of diversity weights — the de-Sybil-ed sample size.",
+          ],
+          [
             <InlineCode key="ur">unique_raters</InlineCode>,
-            "Distinct rater pubkeys — Sybil-resistance signal.",
+            "Distinct rater pubkeys.",
+          ],
+          [
+            <InlineCode key="tur">trusted_unique_raters</InlineCode>,
+            "Raters whose diversity_weight ≥ 0.5. The agents whose opinions clearly count.",
           ],
           [
             <InlineCode key="le">last_event_at</InlineCode>,
             "Recency — old reputation may have decayed.",
+          ],
+          [
+            <InlineCode key="r">raters</InlineCode>,
+            "Per-rater breakdown: pubkey, distinct_services, diversity_weight, amount. Lets agents and auditors see where the score is coming from.",
           ],
           [
             <InlineCode key="pa">per_action</InlineCode>,
@@ -162,6 +229,40 @@ export default function Page() {
           ],
         ]}
       />
+
+      <H2 id="limits">Honest limits</H2>
+      <P>
+        agents402&apos;s reputation system is good against the Sybil attacks an
+        agent-economy actually faces. It is <strong>not</strong> bulletproof. Three
+        gaps worth being honest about:
+      </P>
+      <UL>
+        <LI>
+          <strong>Sophisticated cross-service self-rating.</strong> A patient
+          attacker can run identities that rate many real services first, building
+          up diversity, then rate their own service. The cost scales with the breadth
+          required, but isn&apos;t infinite.
+        </LI>
+        <LI>
+          <strong>Rater honesty.</strong> The system trusts raters to score in good
+          faith. We have no inter-rater-agreement check yet. A rater that
+          consistently disagrees with the network can still contribute weight.
+        </LI>
+        <LI>
+          <strong>Lightning-payment provability.</strong> Lightning payments aren&apos;t
+          on a public ledger. A publisher with sufficient capital could in principle
+          fabricate receipts (since they hold the signing key) without any payment
+          actually settling. Receipt-anchoring + diversity is the practical defense;
+          there is no cryptographic one without on-chain commitments.
+        </LI>
+      </UL>
+      <Callout variant="note" title="Why this is enough for now">
+        Anti-Sybil isn&apos;t solved &mdash; it&apos;s priced. Each defense raises the
+        cost of attack. Receipt-anchoring forces real Lightning hops; diversity
+        weighting forces those hops to be diverse; agent-side policy thresholds let
+        operators choose how cautious to be. Combined, they make the obvious attacks
+        unprofitable, which is what reputation systems can actually achieve.
+      </Callout>
 
       <H2 id="discovery">How agents fetch it</H2>
       <P>

@@ -47,6 +47,13 @@ export function getDb(): Database.Database {
       summary_json TEXT NOT NULL,
       cached_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS rater_diversity_cache (
+      rater_pubkey TEXT PRIMARY KEY,
+      distinct_services INTEGER NOT NULL,
+      total_ratings INTEGER NOT NULL,
+      cached_at INTEGER NOT NULL
+    );
   `);
   // Migrations for older agent.db files.
   const cols = db
@@ -160,6 +167,39 @@ export function putCachedReputation(opts: {
        VALUES (?, ?, ?, ?)`,
     )
     .run(opts.service_pubkey, opts.domain, JSON.stringify(opts.summary), Date.now());
+}
+
+export type RaterDiversity = {
+  rater_pubkey: string;
+  distinct_services: number;
+  total_ratings: number;
+  cached_at: number;
+};
+
+export function getCachedRaterDiversity(
+  rater_pubkey: string,
+  ttlMs = 60 * 60 * 1000, // 1 hour
+): RaterDiversity | null {
+  const row = getDb()
+    .prepare(`SELECT * FROM rater_diversity_cache WHERE rater_pubkey = ?`)
+    .get(rater_pubkey) as RaterDiversity | undefined;
+  if (!row) return null;
+  if (Date.now() - row.cached_at > ttlMs) return null;
+  return row;
+}
+
+export function putCachedRaterDiversity(d: {
+  rater_pubkey: string;
+  distinct_services: number;
+  total_ratings: number;
+}) {
+  getDb()
+    .prepare(
+      `INSERT OR REPLACE INTO rater_diversity_cache
+       (rater_pubkey, distinct_services, total_ratings, cached_at)
+       VALUES (?, ?, ?, ?)`,
+    )
+    .run(d.rater_pubkey, d.distinct_services, d.total_ratings, Date.now());
 }
 
 export function todaysSpendMsats(): number {

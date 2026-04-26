@@ -321,23 +321,138 @@ export function verifyFeedbackEvent(e: Event): VerifiedFeedback | null {
 }
 
 /* ----------------------------------------------------------------------- */
+/* Per-rater diversity                                                     */
+/* ----------------------------------------------------------------------- */
+
+/**
+ * Fetch a rater's full kind-30402 history across relays and count how many
+ * distinct services they've rated. Used to compute rater trust weights.
+ *
+ * Returns null if the lookup fails (relay timeout, etc.) so callers can fall
+ * back to a "default weight" rather than dropping the rater entirely.
+ */
+export async function fetchRaterHistory(opts: {
+  raterPubkey: string;
+  relays?: string[];
+  timeoutMs?: number;
+}): Promise<{ distinct_services: number; total_ratings: number } | null> {
+  const relays = opts.relays ?? getRelays();
+  const filter = {
+    kinds: [FEEDBACK_KIND],
+    authors: [opts.raterPubkey],
+    limit: 1000,
+  };
+  const events: Event[] = [];
+  const seen = new Set<string>();
+  let resolved = false;
+  await new Promise<void>((resolve) => {
+    const finish = () => {
+      if (!resolved) {
+        resolved = true;
+        try {
+          sub.close();
+        } catch {}
+        resolve();
+      }
+    };
+    const sub = pool().subscribe(relays, filter, {
+      onevent(e: Event) {
+        if (!seen.has(e.id)) {
+          seen.add(e.id);
+          events.push(e);
+        }
+      },
+      oneose: finish,
+    });
+    setTimeout(finish, opts.timeoutMs ?? 4000);
+  });
+  if (events.length === 0) {
+    // Could be no history, or could be relay miss. Caller decides interpretation.
+    return { distinct_services: 0, total_ratings: 0 };
+  }
+  const services = new Set<string>();
+  // Per replaceable-event semantics, a single (pubkey, d) pair counts once.
+  const seenReplaceable = new Set<string>();
+  for (const e of events) {
+    const d = e.tags.find((t) => t[0] === "d")?.[1];
+    const s = e.tags.find((t) => t[0] === "s")?.[1];
+    if (!s) continue;
+    const key = `${e.pubkey}/${d ?? ""}`;
+    if (seenReplaceable.has(key)) continue;
+    seenReplaceable.add(key);
+    services.add(s);
+  }
+  return { distinct_services: services.size, total_ratings: seenReplaceable.size };
+}
+
+/**
+ * Compute a 0–1 weight for a rater based on how many distinct services they've
+ * rated. Pure function of (distinct_services, knobs).
+ *
+ *   weight = clamp01( (distinct - min_to_count + 1) / (full_at - min_to_count + 1) )
+ *
+ * Defaults: min_to_count = 1, full_at = 3
+ *   distinct = 1 → 1/3 ≈ 0.33
+ *   distinct = 2 → 2/3 ≈ 0.67
+ *   distinct = 3 → 1.0
+ *
+ * If min_to_count = 3 and full_at = 3:
+ *   distinct < 3 → 0 (drop entirely)
+ *   distinct ≥ 3 → 1.0
+ */
+export function diversityWeight(opts: {
+  distinct_services: number;
+  min_to_count?: number;
+  full_at?: number;
+}): number {
+  const min = Math.max(1, opts.min_to_count ?? 1);
+  const full = Math.max(min, opts.full_at ?? 3);
+  if (opts.distinct_services < min) return 0;
+  if (full === min) return 1;
+  const x = (opts.distinct_services - min + 1) / (full - min + 1);
+  return Math.max(0, Math.min(1, x));
+}
+
+/* ----------------------------------------------------------------------- */
 /* Aggregation                                                             */
 /* ----------------------------------------------------------------------- */
+
+export type RaterContribution = {
+  rater_pubkey: string;
+  distinct_services: number;
+  diversity_weight: number;
+  rated_count_for_this_service: number;
+  total_amount_msats: number;
+};
 
 export type ReputationSummary = {
   service_pubkey: string;
   domain: string;
-  weighted_score: number; // Σ(amount × score) / Σ(amount), or NaN if no data
-  flat_average: number; // Σ(score) / N, simple mean
+  /**
+   * The canonical reputation score:
+   *   Σ(amount × score × diversity_weight) / Σ(amount × diversity_weight)
+   * Single-service raters are downweighted; multi-service raters carry full weight.
+   */
+  weighted_score: number;
+  /**
+   * The raw amount-weighted average without diversity weighting, for comparison.
+   *   Σ(amount × score) / Σ(amount)
+   */
+  unweighted_score: number;
+  flat_average: number;
   sample_size: number;
+  effective_sample_size: number; // sample weighted by diversity_weight
   total_msats: number;
+  effective_msats: number; // total_msats weighted by diversity_weight
   unique_raters: number;
-  last_event_at: number; // unix seconds
+  trusted_unique_raters: number; // raters with diversity_weight ≥ 0.5
+  last_event_at: number;
   per_action: Array<{
     action_id: string;
     sample_size: number;
     weighted_score: number;
   }>;
+  raters: RaterContribution[];
 };
 
 /**
@@ -357,41 +472,115 @@ function dedupReplaceable(items: VerifiedFeedback[]): VerifiedFeedback[] {
 
 export function aggregateReputation(
   feedbacks: VerifiedFeedback[],
-  opts: { service_pubkey: string; domain: string },
+  opts: {
+    service_pubkey: string;
+    domain: string;
+    /**
+     * Map from rater_pubkey → distinct_services count. Missing raters get
+     * `defaultDistinctServices` (defaults to 1 — minimal trust).
+     */
+    raterDistinctServices?: Record<string, number>;
+    defaultDistinctServices?: number;
+    minDistinctServicesToCount?: number;
+    fullWeightAtDistinctServices?: number;
+  },
 ): ReputationSummary {
   const items = dedupReplaceable(feedbacks);
-  const totalMsats = items.reduce((acc, f) => acc + f.amount_msats, 0);
-  const weightedSum = items.reduce((acc, f) => acc + f.amount_msats * f.score, 0);
-  const flatSum = items.reduce((acc, f) => acc + f.score, 0);
-  const raters = new Set(items.map((f) => f.rater_pubkey));
   const last = items.reduce((m, f) => Math.max(m, f.created_at), 0);
+
+  const ratersMap = opts.raterDistinctServices ?? {};
+  const defaultN = opts.defaultDistinctServices ?? 1;
+  const minToCount = opts.minDistinctServicesToCount ?? 1;
+  const fullAt = opts.fullWeightAtDistinctServices ?? 3;
+
+  // Aggregate per-rater contributions for the summary's `raters` field and
+  // for computing the diversity-weighted score.
+  type RaterAgg = {
+    distinct: number;
+    weight: number;
+    rated: number;
+    total_msats: number;
+  };
+  const perRater = new Map<string, RaterAgg>();
+  for (const f of items) {
+    let agg = perRater.get(f.rater_pubkey);
+    if (!agg) {
+      const distinct = ratersMap[f.rater_pubkey] ?? defaultN;
+      const weight = diversityWeight({
+        distinct_services: distinct,
+        min_to_count: minToCount,
+        full_at: fullAt,
+      });
+      agg = { distinct, weight, rated: 0, total_msats: 0 };
+      perRater.set(f.rater_pubkey, agg);
+    }
+    agg.rated++;
+    agg.total_msats += f.amount_msats;
+  }
+
+  let weightedSumDiverse = 0; // Σ(amount × score × weight)
+  let totalMsatsDiverse = 0; // Σ(amount × weight)
+  let weightedSumRaw = 0; // Σ(amount × score)
+  let totalMsatsRaw = 0; // Σ(amount)
+  let flatSum = 0;
+  let effectiveSample = 0; // Σ(weight)
+  let trustedRaters = 0;
+  for (const f of items) {
+    const w = perRater.get(f.rater_pubkey)?.weight ?? 0;
+    weightedSumDiverse += f.amount_msats * f.score * w;
+    totalMsatsDiverse += f.amount_msats * w;
+    weightedSumRaw += f.amount_msats * f.score;
+    totalMsatsRaw += f.amount_msats;
+    flatSum += f.score;
+    effectiveSample += w;
+  }
+  for (const r of perRater.values()) {
+    if (r.weight >= 0.5) trustedRaters++;
+  }
 
   const perAction = new Map<
     string,
     { sample: number; weighted: number; total: number }
   >();
   for (const f of items) {
+    const w = perRater.get(f.rater_pubkey)?.weight ?? 0;
     const cur = perAction.get(f.action_id) ?? { sample: 0, weighted: 0, total: 0 };
     cur.sample++;
-    cur.weighted += f.amount_msats * f.score;
-    cur.total += f.amount_msats;
+    cur.weighted += f.amount_msats * f.score * w;
+    cur.total += f.amount_msats * w;
     perAction.set(f.action_id, cur);
   }
+
+  const raters: RaterContribution[] = [...perRater.entries()].map(
+    ([pubkey, agg]) => ({
+      rater_pubkey: pubkey,
+      distinct_services: agg.distinct,
+      diversity_weight: Number(agg.weight.toFixed(4)),
+      rated_count_for_this_service: agg.rated,
+      total_amount_msats: agg.total_msats,
+    }),
+  );
+  raters.sort((a, b) => b.total_amount_msats - a.total_amount_msats);
 
   return {
     service_pubkey: opts.service_pubkey,
     domain: opts.domain,
-    weighted_score: totalMsats > 0 ? weightedSum / totalMsats : NaN,
+    weighted_score: totalMsatsDiverse > 0 ? weightedSumDiverse / totalMsatsDiverse : NaN,
+    unweighted_score: totalMsatsRaw > 0 ? weightedSumRaw / totalMsatsRaw : NaN,
     flat_average: items.length > 0 ? flatSum / items.length : NaN,
     sample_size: items.length,
-    total_msats: totalMsats,
-    unique_raters: raters.size,
+    effective_sample_size: Number(effectiveSample.toFixed(4)),
+    total_msats: totalMsatsRaw,
+    effective_msats: Math.round(totalMsatsDiverse),
+    unique_raters: perRater.size,
+    trusted_unique_raters: trustedRaters,
     last_event_at: last,
     per_action: [...perAction.entries()].map(([action_id, v]) => ({
       action_id,
       sample_size: v.sample,
       weighted_score: v.total > 0 ? v.weighted / v.total : NaN,
     })),
+    raters,
   };
 }
 

@@ -27,6 +27,23 @@ export const PolicySchema = z.object({
     .nonnegative()
     .default(0)
     .describe("Below this many feedback events, ignore the network score (treat as no data)."),
+  // Anti-Sybil: rater diversity weighting
+  rater_min_distinct_services: z
+    .number()
+    .int()
+    .nonnegative()
+    .default(1)
+    .describe(
+      "Drop ratings entirely from raters with fewer than this many distinct services in their history. Default 1 (count single-service raters at minimal weight). Set 3 for strict cross-service-history requirement.",
+    ),
+  rater_full_weight_at_distinct_services: z
+    .number()
+    .int()
+    .positive()
+    .default(3)
+    .describe(
+      "A rater achieves full weight (1.0) once they've rated this many distinct services. Below this they're linearly downweighted. Default 3.",
+    ),
 });
 export type Policy = z.infer<typeof PolicySchema>;
 

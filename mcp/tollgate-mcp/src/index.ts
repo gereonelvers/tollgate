@@ -13,6 +13,8 @@ import {
   recordFeedbackPublished,
   getCachedReputation,
   putCachedReputation,
+  getCachedRaterDiversity,
+  putCachedRaterDiversity,
 } from "./db.js";
 import { parseChallengeFromResponse, buildAuthorizationHeader } from "./l402-client.js";
 import { payInvoice, getBalance } from "./wallet.js";
@@ -22,11 +24,13 @@ import {
   signEvent,
   publishToRelays,
   fetchFeedbackEvents,
+  fetchRaterHistory,
   verifyFeedbackEvent,
   aggregateReputation,
   getRelays,
   closePool,
   type Receipt,
+  type VerifiedFeedback,
 } from "./nostr.js";
 
 const server = new McpServer({ name: "tollgate", version: "0.1.0" });
@@ -34,6 +38,39 @@ const server = new McpServer({ name: "tollgate", version: "0.1.0" });
 const log = (...args: unknown[]) => {
   process.stderr.write(args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") + "\n");
 };
+
+/**
+ * Build a {rater → distinct_services} map for the given verified feedback set,
+ * using the cache where available and fetching missing entries in parallel.
+ */
+async function getRaterDiversities(
+  feedbacks: VerifiedFeedback[],
+): Promise<Record<string, number>> {
+  const unique = new Set(feedbacks.map((f) => f.rater_pubkey));
+  const out: Record<string, number> = {};
+  const toFetch: string[] = [];
+  for (const pk of unique) {
+    const cached = getCachedRaterDiversity(pk);
+    if (cached) out[pk] = cached.distinct_services;
+    else toFetch.push(pk);
+  }
+  if (toFetch.length === 0) return out;
+  await Promise.allSettled(
+    toFetch.map(async (pk) => {
+      const h = await fetchRaterHistory({ raterPubkey: pk, timeoutMs: 3500 });
+      if (h) {
+        out[pk] = h.distinct_services;
+        putCachedRaterDiversity({
+          rater_pubkey: pk,
+          distinct_services: h.distinct_services,
+          total_ratings: h.total_ratings,
+        });
+      }
+      // On failure, leave undefined; aggregator falls back to default.
+    }),
+  );
+  return out;
+}
 
 /* ------------------------------------------------------------------ */
 /* discover                                                            */
@@ -73,6 +110,7 @@ server.tool(
     const known = isKnownService(domain);
     const servicePubkey = manifest.receipts.pubkey_hex;
 
+    const policy = loadPolicy();
     let networkReputation: unknown = { available: false };
     if (fetch_network_reputation) {
       try {
@@ -84,9 +122,13 @@ server.tool(
           const verified = events
             .map(verifyFeedbackEvent)
             .filter((v): v is NonNullable<typeof v> => v !== null);
+          const raterDistinctServices = await getRaterDiversities(verified);
           const summary = aggregateReputation(verified, {
             service_pubkey: servicePubkey,
             domain,
+            raterDistinctServices,
+            minDistinctServicesToCount: policy.rater_min_distinct_services,
+            fullWeightAtDistinctServices: policy.rater_full_weight_at_distinct_services,
           });
           putCachedReputation({ service_pubkey: servicePubkey, domain, summary });
           networkReputation = { available: true, cached: false, ...summary };
@@ -475,11 +517,19 @@ server.tool(
       }
     }
 
+    const policy = loadPolicy();
     const events = await fetchFeedbackEvents({ servicePubkeyHex: svcPubkey, timeoutMs: 5000 });
     const verified = events
       .map(verifyFeedbackEvent)
       .filter((v): v is NonNullable<typeof v> => v !== null);
-    const summary = aggregateReputation(verified, { service_pubkey: svcPubkey, domain });
+    const raterDistinctServices = await getRaterDiversities(verified);
+    const summary = aggregateReputation(verified, {
+      service_pubkey: svcPubkey,
+      domain,
+      raterDistinctServices,
+      minDistinctServicesToCount: policy.rater_min_distinct_services,
+      fullWeightAtDistinctServices: policy.rater_full_weight_at_distinct_services,
+    });
     putCachedReputation({ service_pubkey: svcPubkey, domain, summary });
 
     return {
