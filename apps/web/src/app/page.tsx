@@ -55,7 +55,6 @@ export default function Home() {
               cta="Create new wallet →"
               href="/setup/new"
               meta="3 min · seed phrase backup required"
-              soon
             />
             <PathCard
               n="03"
