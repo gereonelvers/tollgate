@@ -25,10 +25,10 @@ export const ACTIONS: Record<string, ActionDefinition> = {
       type: "site_agent_query",
       title: "Ask the Editor",
       description:
-        "A question-answering endpoint over The Halving Gazette's archive. Cites only material we have actually published — a low bar, but a sincere one. Three sats. Final.",
+        "A question-answering endpoint over The Halving Gazette's archive. Cites only material we have actually published — a low bar, but a sincere one. Two sats. Final.",
       endpoint: `${PUBLISHER_BASE}/api/actions/ask.site_agent`,
       method: "POST",
-      price_msats: 3000,
+      price_msats: 2000,
       input_schema: {
         type: "object",
         properties: {

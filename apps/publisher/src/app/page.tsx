@@ -40,7 +40,7 @@ export default function Home() {
               Vol. {VOL} · Issue {ISSUE} · {TODAY}
             </span>
             <span className="label text-[var(--accent)]">
-              Three (3) sats per question · Lightning accepted, feedback not
+              Two (2) sats per question · Lightning accepted, feedback not
             </span>
             <span className="font-mono text-[var(--text-4)]">
               Today’s hash: 0x000…BEEF
@@ -83,7 +83,7 @@ export default function Home() {
               <div className="dek mt-3 text-[clamp(15px,1.5vw,18px)]">
                 Filed by {lead.author}, our correspondent on the unconfirmed.
                 Originally cited as <span className="font-mono">{lead.id}</span>{" "}
-                in our archive — pay <span className="font-semibold">3 sats</span>{" "}
+                in our archive — pay <span className="font-semibold">2 sats</span>{" "}
                 to ask it anything, and we will pretend to be qualified.
               </div>
 
@@ -94,7 +94,7 @@ export default function Home() {
                 </span>
               </p>
 
-              <Paywall actionId="ask.site_agent" priceSats={3} />
+              <Paywall actionId="ask.site_agent" priceSats={2} />
 
               <div className="mt-6 flex items-center gap-4 border-t hairline-soft pt-4 text-[12.5px]">
                 <span className="font-mono text-[var(--text-3)]">
@@ -188,7 +188,7 @@ export default function Home() {
             <h2 className="display text-[clamp(26px,3.2vw,38px)]">
               From The Archive
             </h2>
-            <span className="label">Yours, for 3 sats per question</span>
+            <span className="label">Yours, for 2 sats per question</span>
           </div>
           <div className="grid grid-cols-1 gap-x-10 gap-y-10 pt-9 sm:grid-cols-2 lg:grid-cols-3">
             {sidebar.map((doc) => (
@@ -408,7 +408,7 @@ function FauxClassifiedColumn() {
         <li>
           <span className="font-semibold">NOTICE.</span> Articles fact-checked
           by a panel of stochastic parrots. Errors are not errors but features
-          of the prior. Disagree? Pay 3 sats and ask.
+          of the prior. Disagree? Pay 2 sats and ask.
         </li>
       </ul>
     </article>
