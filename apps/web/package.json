@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@buildonspark/spark-sdk": "^0.7.15",
     "@getalby/sdk": "^7.0.0",
     "@noble/hashes": "^2.2.0",
     "next": "16.2.4",

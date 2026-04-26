@@ -37,6 +37,12 @@ export function WalletDashboard() {
         (r) => setBalance(r),
         (e) => setBalanceErr(e?.message ?? String(e)),
       );
+    } else if (w.provider === "spark" && w.spark_mnemonic) {
+      loadSparkBalance(w).then(
+        (msats) =>
+          setBalance({ confirmed_msats: msats, spendable_msats: msats, unit: "msat" }),
+        (e) => setBalanceErr(e?.message ?? String(e)),
+      );
     }
   }, []);
 
@@ -199,7 +205,7 @@ function Skel({ label }: { label: string }) {
 
 function providerLabel(p: StoredWallet["provider"]): string {
   if (p === "nwc") return "Nostr Wallet Connect";
-  if (p === "spark") return "Spark";
+  if (p === "spark") return "Spark · self-custodial";
   return "Demo (no real sats)";
 }
 
@@ -208,6 +214,11 @@ async function loadNwcBalance(nwcUrl: string): Promise<Balance> {
   const c = new NWCClient({ nostrWalletConnectUrl: nwcUrl });
   const r = await c.getBalance();
   return { confirmed_msats: r.balance, spendable_msats: r.balance, unit: "msat" };
+}
+
+async function loadSparkBalance(stored: StoredWallet): Promise<number> {
+  const { getSparkBalance } = await import("@/lib/spark");
+  return getSparkBalance(stored);
 }
 
 function SponsorButton({
@@ -231,25 +242,40 @@ function SponsorButton({
         onClaimed(true);
         return;
       }
-      // NWC wallet: ask the wallet to make an invoice for 50 sats, hand it to /api/sponsor.
-      if (wallet.provider !== "nwc" || !wallet.nwc_url) {
-        setMsg("Sponsor faucet is only available for NWC and demo wallets right now.");
+      // Spark or NWC: ask the user's wallet for a 50-sat invoice; POST to /api/sponsor.
+      let invoice: string;
+      let payment_hash: string | undefined;
+      if (wallet.provider === "nwc" && wallet.nwc_url) {
+        const { NWCClient } = await import("@getalby/sdk");
+        const c = new NWCClient({ nostrWalletConnectUrl: wallet.nwc_url });
+        const inv = await c.makeInvoice({
+          amount: 50_000,
+          description: "Faregate sponsor faucet",
+          expiry: 600,
+        });
+        invoice = inv.invoice;
+        payment_hash = inv.payment_hash;
+      } else if (wallet.provider === "spark" && wallet.spark_mnemonic) {
+        const { createSparkLightningInvoice } = await import("@/lib/spark");
+        const r = await createSparkLightningInvoice(wallet, {
+          amountSats: 50,
+          memo: "Faregate sponsor faucet",
+        });
+        invoice = r.encodedInvoice;
+      } else {
+        setMsg("Sponsor faucet is only available for Spark, NWC, and demo wallets.");
         return;
       }
-      const { NWCClient } = await import("@getalby/sdk");
-      const c = new NWCClient({ nostrWalletConnectUrl: wallet.nwc_url });
-      const inv = await c.makeInvoice({
-        amount: 50_000, // 50 sats
-        description: "Faregate sponsor faucet",
-        expiry: 600,
-      });
       const r = await fetch("/api/sponsor", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          wallet_public_id: wallet.lightning_address ?? "anon",
-          invoice: inv.invoice,
-          payment_hash: inv.payment_hash,
+          wallet_public_id:
+            wallet.lightning_address ??
+            wallet.spark_identity_pubkey ??
+            "anon",
+          invoice,
+          payment_hash,
         }),
       });
       const j = (await r.json()) as { ok?: boolean; error?: string; reason?: string };

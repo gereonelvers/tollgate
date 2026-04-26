@@ -12,16 +12,26 @@ const STORAGE_KEY = "faregate.wallet.v1";
 export type StoredWallet = {
   version: 1;
   created_at: string;
-  /** Provider tag — one of "nwc" | "dev-fake" | "spark" (future). */
+  /** Provider tag. */
   provider: "nwc" | "dev-fake" | "spark";
   /** Display label shown to the user. */
   label?: string;
   /** Connection URI for NWC backends. Treat as a secret. */
   nwc_url?: string;
+  /** BIP-39 mnemonic for Spark wallets. v1 plaintext; encrypt in v2. SECRET. */
+  spark_mnemonic?: string;
+  /** Spark network — defaults to MAINNET. */
+  spark_network?: "MAINNET" | "REGTEST" | "SIGNET" | "TESTNET";
+  /** Cached Spark address — convenient for showing in UI without re-init. */
+  spark_address?: string;
+  /** Cached Spark identity pubkey hex. */
+  spark_identity_pubkey?: string;
   /** Optional Lightning address shown to the user for receive. */
   lightning_address?: string;
   /** Whether the user accepted that we don't custody their funds. */
   accepted_self_custody: boolean;
+  /** Whether the user confirmed they wrote down the mnemonic. Spark only. */
+  backup_confirmed: boolean;
   /** Whether the user has claimed the sponsor faucet. */
   sponsor_claimed: boolean;
   /** Saved spend policy. */
@@ -102,6 +112,7 @@ export function newDevFakeWallet(label = "Demo wallet"): StoredWallet {
     provider: "dev-fake",
     label,
     accepted_self_custody: true,
+    backup_confirmed: true, // no real backup needed
     sponsor_claimed: false,
     policy: DEFAULT_POLICY,
   };
@@ -116,6 +127,30 @@ export function newNwcWallet(nwcUrl: string, label?: string): StoredWallet {
     nwc_url: nwcUrl,
     lightning_address: extractLnAddressFromNwc(nwcUrl),
     accepted_self_custody: true,
+    backup_confirmed: true, // user manages their own NWC wallet's backup
+    sponsor_claimed: false,
+    policy: DEFAULT_POLICY,
+  };
+}
+
+export function newSparkWallet(opts: {
+  mnemonic: string;
+  network?: StoredWallet["spark_network"];
+  address?: string;
+  identity_pubkey?: string;
+  label?: string;
+}): StoredWallet {
+  return {
+    version: 1,
+    created_at: new Date().toISOString(),
+    provider: "spark",
+    label: opts.label ?? "Spark wallet",
+    spark_mnemonic: opts.mnemonic,
+    spark_network: opts.network ?? "MAINNET",
+    spark_address: opts.address,
+    spark_identity_pubkey: opts.identity_pubkey,
+    accepted_self_custody: true,
+    backup_confirmed: false, // user must confirm before we route money to it
     sponsor_claimed: false,
     policy: DEFAULT_POLICY,
   };
