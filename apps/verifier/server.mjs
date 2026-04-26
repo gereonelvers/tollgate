@@ -19,7 +19,7 @@ const BASE = process.env.VERIFIER_BASE_URL ?? `http://localhost:${PORT}`;
 const SECRET = process.env.L402_SECRET ?? "verifier-dev-secret";
 const NWC_URL = process.env.VERIFIER_NWC_URL;
 
-const PRICE_MSATS = 5000;
+const PRICE_MSATS = 50000;
 
 // ---- tiny "fact base" --------------------------------------------------
 const FACT_DB = [
@@ -338,7 +338,7 @@ const server = http.createServer(async (req, res) => {
       return send(
         res,
         200,
-        "<!doctype html><meta charset=utf-8><title>Faregate Verifier</title><body style=\"font-family:ui-monospace,monospace;background:#0a0a0f;color:#fafafa;padding:48px;max-width:720px;margin:auto\"><h1 style=\"color:#fbbf24\">faregate verifier</h1><p>A second paid service for the agent economy demo. Run by an entity that's not the publisher. Pay 5 sats per <code>verify.claim</code> request.</p><p><a style=\"color:#fbbf24\" href=\"/.well-known/agents402.json\">manifest</a> · <a style=\"color:#fbbf24\" href=\"/api/receipts\">receipts</a></p></body>",
+        "<!doctype html><meta charset=utf-8><title>Faregate Verifier</title><body style=\"font-family:ui-monospace,monospace;background:#0a0a0f;color:#fafafa;padding:48px;max-width:720px;margin:auto\"><h1 style=\"color:#fbbf24\">faregate verifier</h1><p>A second paid service for the agent economy demo. Run by an entity that's not the publisher. Pay 50 sats per <code>verify.claim</code> request.</p><p><a style=\"color:#fbbf24\" href=\"/.well-known/agents402.json\">manifest</a> · <a style=\"color:#fbbf24\" href=\"/api/receipts\">receipts</a></p></body>",
         { "content-type": "text/html; charset=utf-8" },
       );
     }

@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SPONSOR_NWC_URL = process.env.SPONSOR_NWC_URL;
-const MAX_GRANT_MSATS = Number(process.env.SPONSOR_MAX_GRANT_MSATS ?? 50_000); // 50 sats
+const MAX_GRANT_MSATS = Number(process.env.SPONSOR_MAX_GRANT_MSATS ?? 500_000); // 500 sats
 const COOLDOWN_MS = Number(process.env.SPONSOR_COOLDOWN_MS ?? 24 * 60 * 60 * 1000); // 24h
 
 /* In-memory rate-limit + grant log. Naïve, fine for the prototype.
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const invoice = body.invoice?.trim();
   if (!invoice || !/^lnbc/i.test(invoice)) {
     return NextResponse.json(
-      { ok: false, error: "invoice_required", reason: "Provide a BOLT11 invoice for ~50 sats." },
+      { ok: false, error: "invoice_required", reason: "Provide a BOLT11 invoice for ~500 sats." },
       { status: 400 },
     );
   }

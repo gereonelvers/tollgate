@@ -28,8 +28,8 @@ export function WalletDashboard() {
     if (w.provider === "dev-fake") {
       // Mock balance for the demo
       setBalance({
-        confirmed_msats: w.sponsor_claimed ? 150_000 : 100_000,
-        spendable_msats: w.sponsor_claimed ? 150_000 : 100_000,
+        confirmed_msats: w.sponsor_claimed ? 1_500_000 : 1_000_000,
+        spendable_msats: w.sponsor_claimed ? 1_500_000 : 1_000_000,
         unit: "msat",
       });
     } else if (w.provider === "nwc" && w.nwc_url) {
@@ -108,7 +108,7 @@ export function WalletDashboard() {
                 <p className="mt-3 text-[14px] leading-relaxed text-[var(--text-2)]">
                   {wallet.sponsor_claimed
                     ? "You've already claimed your starter sats. Top up from any other Lightning wallet."
-                    : "First-time wallets are eligible for a small starter grant. ~50 sats, sponsored by us."}
+                    : "First-time wallets are eligible for a small starter grant. ~500 sats, sponsored by us."}
                 </p>
                 <SponsorButton
                   wallet={wallet}
@@ -118,8 +118,8 @@ export function WalletDashboard() {
                     setWallet(next);
                     if (next.provider === "dev-fake") {
                       setBalance({
-                        confirmed_msats: 150_000,
-                        spendable_msats: 150_000,
+                        confirmed_msats: 1_500_000,
+                        spendable_msats: 1_500_000,
                         unit: "msat",
                       });
                     }
@@ -434,7 +434,7 @@ function SponsorButton({
       // Demo wallet: just simulate
       if (wallet.provider === "dev-fake") {
         await new Promise((r) => setTimeout(r, 400));
-        setMsg("✓ 50 sats credited (simulated)");
+        setMsg("✓ 500 sats credited (simulated)");
         onClaimed(true);
         return;
       }
@@ -445,7 +445,7 @@ function SponsorButton({
         const { NWCClient } = await import("@getalby/sdk");
         const c = new NWCClient({ nostrWalletConnectUrl: wallet.nwc_url });
         const inv = await c.makeInvoice({
-          amount: 50_000,
+          amount: 500_000,
           description: "Faregate sponsor faucet",
           expiry: 600,
         });
@@ -454,7 +454,7 @@ function SponsorButton({
       } else if (wallet.provider === "spark" && wallet.spark_mnemonic) {
         const { createSparkLightningInvoice } = await import("@/lib/spark");
         const r = await createSparkLightningInvoice(wallet, {
-          amountSats: 50,
+          amountSats: 500,
           memo: "Faregate sponsor faucet",
         });
         invoice = r.encodedInvoice;
@@ -479,7 +479,7 @@ function SponsorButton({
         setMsg(`Couldn't sponsor: ${j.error ?? j.reason ?? "unknown error"}`);
         return;
       }
-      setMsg("✓ 50 sats sent — check your wallet in a few seconds");
+      setMsg("✓ 500 sats sent — check your wallet in a few seconds");
       onClaimed(true);
     } catch (e: unknown) {
       setMsg(`Failed: ${e instanceof Error ? e.message : String(e)}`);

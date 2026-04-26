@@ -51,10 +51,10 @@ export type StoredWallet = {
 };
 
 export const DEFAULT_POLICY: StoredWallet["policy"] = {
-  daily_budget_msats: 50_000,
-  max_per_action_msats: 10_000,
-  require_confirm_above_msats: 5_000,
-  new_service_max_msats: 2_000,
+  daily_budget_msats: 500_000,
+  max_per_action_msats: 100_000,
+  require_confirm_above_msats: 50_000,
+  new_service_max_msats: 20_000,
   allowed_action_types: ["web_access", "structured_data", "site_agent_query", "verification"],
   blocked_domains: [],
   trusted_domains: [],

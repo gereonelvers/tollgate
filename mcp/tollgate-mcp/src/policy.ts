@@ -5,15 +5,15 @@ import { z } from "zod";
 
 export const PolicySchema = z.object({
   version: z.literal("0.1").default("0.1"),
-  daily_budget_msats: z.number().int().nonnegative().default(50_000),
-  max_per_action_msats: z.number().int().nonnegative().default(10_000),
-  require_confirm_above_msats: z.number().int().nonnegative().default(5_000),
+  daily_budget_msats: z.number().int().nonnegative().default(500_000),
+  max_per_action_msats: z.number().int().nonnegative().default(100_000),
+  require_confirm_above_msats: z.number().int().nonnegative().default(50_000),
   allowed_action_types: z
     .array(z.string())
     .default(["web_access", "structured_data", "site_agent_query", "verification"]),
   blocked_domains: z.array(z.string()).default([]),
   trusted_domains: z.array(z.string()).default([]),
-  new_service_max_msats: z.number().int().nonnegative().default(2_000),
+  new_service_max_msats: z.number().int().nonnegative().default(20_000),
   // Network reputation thresholds — applied only when reputation data is available.
   min_network_reputation: z
     .number()

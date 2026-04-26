@@ -354,7 +354,7 @@ export function NewSetup() {
         <FactCard
           n="iii"
           title="Sponsored start"
-          body="We&apos;ll send you ~50 sats from our faucet so you can immediately pay your first paywall without funding a wallet first."
+          body="We&apos;ll send you ~500 sats from our faucet so you can immediately pay your first paywall without funding a wallet first."
         />
       </div>
 

@@ -25,10 +25,10 @@ export const ACTIONS: Record<string, ActionDefinition> = {
       type: "site_agent_query",
       title: "Ask the Editor",
       description:
-        "A question-answering endpoint over The Halving Gazette's archive. Cites only material we have actually published — a low bar, but a sincere one. Two sats. Final.",
+        "A question-answering endpoint over The Halving Gazette's archive. Cites only material we have actually published — a low bar, but a sincere one. Twenty sats. Final.",
       endpoint: `${PUBLISHER_BASE}/api/actions/ask.site_agent`,
       method: "POST",
-      price_msats: 2000,
+      price_msats: 20000,
       input_schema: {
         type: "object",
         properties: {
@@ -54,10 +54,10 @@ export const ACTIONS: Record<string, ActionDefinition> = {
       type: "structured_data",
       title: "Reprint a single article, structured",
       description:
-        "Returns one article from the archive as clean JSON — title, author, date, summary, key claims — for the sort of agent that prefers a tidy feed and is willing to pay a sat for it.",
+        "Returns one article from the archive as clean JSON — title, author, date, summary, key claims — for the sort of agent that prefers a tidy feed and is willing to pay ten sats for it.",
       endpoint: `${PUBLISHER_BASE}/api/actions/extract.structured`,
       method: "POST",
-      price_msats: 1000,
+      price_msats: 10000,
       input_schema: {
         type: "object",
         properties: { doc_id: { type: "string" } },

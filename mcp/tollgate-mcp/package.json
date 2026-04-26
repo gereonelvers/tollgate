@@ -1,6 +1,6 @@
 {
   "name": "@agents402/mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server that lets an AI agent pay for L402 paid actions over Lightning. Includes in-band wallet setup (paste NWC or open browser to create a self-custodial Spark wallet) and decentralized Nostr-based service reputation.",
   "license": "MIT",
   "repository": {
