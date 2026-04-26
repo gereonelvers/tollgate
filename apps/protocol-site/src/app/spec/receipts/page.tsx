@@ -75,7 +75,7 @@ export default function Page() {
             <InlineCode key="bp">buyer_pubkey</InlineCode>,
             <span key="bpd">
               Optional. Schnorr-secp256k1 pubkey the buyer supplied via the{" "}
-              <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode> request header. Required
+              <InlineCode>X-Agents402-Buyer-Pubkey</InlineCode> request header. Required
               for the receipt to support{" "}
               <a
                 href="/spec/feedback"

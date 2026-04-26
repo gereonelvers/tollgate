@@ -31,7 +31,7 @@ An agent doing research has no problem paying 3 sats for clean structured data v
 
 Publishers now have a real choice: block, license, or sell per-action. Blocking shrinks reach. Licensing only works for the top dozen content businesses. Selling per-action — page-by-page, query-by-query — is the long tail's option, and it's the only one that scales without a sales team.
 
-The Tollgate primitive (paid-action manifests at /.well-known/agents402.json) is the smallest change a website can make to enter this market. The site declares what's for sale and at what price; Lightning handles the settlement. No accounts, no contracts, no marketplaces taking 30%.`,
+The agents402 primitive (paid-action manifests at /.well-known/agents402.json) is the smallest change a website can make to enter this market. The site declares what's for sale and at what price; Lightning handles the settlement. No accounts, no contracts, no marketplaces taking 30%.`,
   },
   {
     id: "doc.agent_reputation",

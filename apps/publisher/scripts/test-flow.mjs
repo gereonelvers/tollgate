@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 /**
- * Standalone end-to-end smoke test for the Tollgate flow.
+ * Standalone end-to-end smoke test for the Faregate flow.
  *
  *   AGENT_NWC_URL=nostr+walletconnect://... node scripts/test-flow.mjs [base-url]
- *   TOLLGATE_MOCK_LIGHTNING=1 node scripts/test-flow.mjs [base-url]   # offline mode
+ *   FAREGATE_MOCK_LIGHTNING=1 node scripts/test-flow.mjs [base-url]   # offline mode
  *
  * Defaults base-url to http://localhost:3000.
  */
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
-const MOCK = process.env.TOLLGATE_MOCK_LIGHTNING === "1";
+const MOCK =
+  process.env.FAREGATE_MOCK_LIGHTNING === "1" ||
+  process.env.TOLLGATE_MOCK_LIGHTNING === "1";
 const NWC_URL = process.env.AGENT_NWC_URL;
 
 if (!MOCK && !NWC_URL) {
   console.error(
-    "error: set AGENT_NWC_URL to your NWC connection URI before running, OR pass TOLLGATE_MOCK_LIGHTNING=1 for offline mode.",
+    "error: set AGENT_NWC_URL to your NWC connection URI before running, OR pass FAREGATE_MOCK_LIGHTNING=1 for offline mode.",
   );
   process.exit(2);
 }

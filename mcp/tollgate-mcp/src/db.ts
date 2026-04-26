@@ -5,9 +5,19 @@ import os from "node:os";
 
 let db: Database.Database | null = null;
 
+function resolveDataDir(): string {
+  const explicit = process.env.FAREGATE_DATA_DIR || process.env.TOLLGATE_DATA_DIR;
+  if (explicit) return explicit;
+  const home = os.homedir();
+  const newPath = path.join(home, ".faregate");
+  const oldPath = path.join(home, ".tollgate");
+  if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) return oldPath;
+  return newPath;
+}
+
 export function getDb(): Database.Database {
   if (db) return db;
-  const dir = process.env.TOLLGATE_DATA_DIR || path.join(os.homedir(), ".tollgate");
+  const dir = resolveDataDir();
   fs.mkdirSync(dir, { recursive: true });
   db = new Database(path.join(dir, "agent.db"));
   db.pragma("journal_mode = WAL");

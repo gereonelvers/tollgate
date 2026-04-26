@@ -79,7 +79,7 @@ front door.
 
 ## Service 4: demo publisher (apps/publisher)
 
-A real Tollgate-enabled site so anyone with `@agents402/mcp` can `discover`
+A real agents402-enabled site so anyone with `@agents402/mcp` can `discover`
 + `pay_and_invoke` against a live Lightning paywall. Two paid actions
 (`ask.site_agent`, 3 sats; `extract.structured`, 1 sat), a `/.well-known/agents402.json`
 manifest, and a public dashboard that shows sats arriving in real time —
@@ -103,7 +103,7 @@ useful to leave open during a demo.
 - `ANTHROPIC_API_KEY=sk-ant-...` — powers the `ask.site_agent` action.
   Without it, that action returns a stub answer (still demonstrable but
   less impressive).
-- Optional: `TOLLGATE_MOCK_LIGHTNING=1` — bypasses real Lightning and
+- Optional: `FAREGATE_MOCK_LIGHTNING=1` — bypasses real Lightning and
   auto-settles invoices in-memory. Useful for a smoke test before you
   hand over real sats. Leave **unset** for the real demo.
 

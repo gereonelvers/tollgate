@@ -5,7 +5,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  if (process.env.TOLLGATE_MOCK_LIGHTNING !== "1") {
+  if (
+    process.env.FAREGATE_MOCK_LIGHTNING !== "1" &&
+    process.env.TOLLGATE_MOCK_LIGHTNING !== "1"
+  ) {
     return NextResponse.json({ error: "mock mode disabled" }, { status: 404 });
   }
   let body: { payment_hash?: string } = {};

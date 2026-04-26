@@ -32,7 +32,7 @@ export function NewSetup() {
   // CLI-pairing mode: when this page is opened by `npx @agents402/setup`, the
   // CLI passes a callback URL pointing at its localhost listener and a state
   // token. After backup confirmation we POST the wallet config to that URL
-  // instead of routing to /wallet — the CLI writes ~/.tollgate/wallet.json.
+  // instead of routing to /wallet — the CLI writes ~/.faregate/wallet.json.
   const callback = searchParams.get("callback");
   const stateToken = searchParams.get("state");
   const isCliMode = Boolean(callback && stateToken);
@@ -151,7 +151,7 @@ export function NewSetup() {
         <Loading
           steps={[
             "Browser: POSTing wallet config to the localhost listener",
-            "CLI: writing ~/.tollgate/wallet.json",
+            "CLI: writing ~/.faregate/wallet.json",
             "Almost done…",
           ]}
         />
@@ -166,7 +166,7 @@ export function NewSetup() {
           <div className="label text-emerald-800">Wallet linked successfully</div>
           <p className="mt-3 text-[14.5px] leading-relaxed text-emerald-900">
             The setup CLI has written the wallet config to{" "}
-            <code className="font-mono text-emerald-950">~/.tollgate/wallet.json</code>.
+            <code className="font-mono text-emerald-950">~/.faregate/wallet.json</code>.
             Return to your terminal — the CLI will exit on its own. You can
             close this tab.
           </p>

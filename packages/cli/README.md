@@ -17,7 +17,8 @@ This:
    and a single-use state token.
 3. After you create a wallet and confirm your seed phrase, the web page POSTs
    the wallet config to the localhost listener.
-4. The CLI writes `~/.tollgate/wallet.json` (mode `0600`) and exits.
+4. The CLI writes `~/.faregate/wallet.json` (mode `0600`) and exits. (For
+   back-compat, an existing `~/.tollgate/` is preserved if found.)
 
 Restart your MCP client to pick up the new wallet.
 
@@ -28,7 +29,7 @@ Restart your MCP client to pick up the new wallet.
 | `AGENTS402_WEB_URL` | `https://agents402.org` | Web origin to open. |
 | `AGENTS402_SETUP_PORT` | random | Pin the localhost listener port. |
 | `AGENTS402_SETUP_TIMEOUT_MS` | `300000` | How long to wait for the browser POST. |
-| `TOLLGATE_DATA_DIR` | `~/.tollgate` | Where to write `wallet.json`. |
+| `FAREGATE_DATA_DIR` | `~/.faregate` | Where to write `wallet.json`. (`TOLLGATE_DATA_DIR` is read as a fallback.) |
 
 ## Security
 

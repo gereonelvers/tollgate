@@ -42,7 +42,7 @@ import {
   type VerifiedFeedback,
 } from "./nostr.js";
 
-const server = new McpServer({ name: "tollgate", version: "0.1.0" });
+const server = new McpServer({ name: "faregate", version: "0.1.0" });
 
 const log = (...args: unknown[]) => {
   process.stderr.write(args.map((a) => (typeof a === "string" ? a : JSON.stringify(a))).join(" ") + "\n");
@@ -86,7 +86,7 @@ async function getRaterDiversities(
 /* ------------------------------------------------------------------ */
 server.tool(
   "discover",
-  "Look up a Tollgate manifest for a URL or domain. Returns the list of paid actions a site offers, with prices, risk levels, and decentralized network reputation if available. Call this BEFORE pay_and_invoke whenever you encounter a new site or want to see what's available.",
+  "Look up an agents402 manifest for a URL or domain. Returns the list of paid actions a site offers, with prices, risk levels, and decentralized network reputation if available. Call this BEFORE pay_and_invoke whenever you encounter a new site or want to see what's available.",
   {
     url: z.string().describe("A URL or domain (e.g. example.com or https://example.com/article)."),
     fetch_network_reputation: z
@@ -104,7 +104,7 @@ server.tool(
             type: "text",
             text: JSON.stringify(
               {
-                supports_tollgate: false,
+                supports_agents402: false,
                 manifest_url: manifestUrl,
                 hint: "Site does not expose /.well-known/agents402.json or it failed to parse.",
               },
@@ -153,7 +153,7 @@ server.tool(
           type: "text",
           text: JSON.stringify(
             {
-              supports_tollgate: true,
+              supports_agents402: true,
               manifest_url: manifestUrl,
               service: manifest.service,
               actions: manifest.actions.map((a) => ({
@@ -271,7 +271,7 @@ server.tool(
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-tollgate-buyer-pubkey": agentKey.publicKey,
+        "x-agents402-buyer-pubkey": agentKey.publicKey,
       },
       body: JSON.stringify(input),
     });
@@ -301,7 +301,7 @@ server.tool(
       headers: {
         "content-type": "application/json",
         authorization: authHeader,
-        "x-tollgate-buyer-pubkey": agentKey.publicKey,
+        "x-agents402-buyer-pubkey": agentKey.publicKey,
       },
       body: JSON.stringify(input),
     });
@@ -414,7 +414,7 @@ server.tool(
       // produce a verifiable feedback event because verifiers will require it.
       return errorResult({
         error: "receipt_missing_buyer_pubkey",
-        hint: "The publisher didn't bind your agent identity into this receipt. Pay for a new action with a publisher that supports x-tollgate-buyer-pubkey.",
+        hint: "The publisher didn't bind your agent identity into this receipt. Pay for a new action with a publisher that supports x-agents402-buyer-pubkey.",
       });
     }
 
@@ -678,7 +678,7 @@ server.tool(
 /* ------------------------------------------------------------------ */
 server.tool(
   "wallet_setup_nwc",
-  "Pair a wallet by pasting a Nostr Wallet Connect URI. Validates the URI by calling getBalance against the wallet, then writes ~/.tollgate/wallet.json. Use this when the user already has a Lightning wallet that supports NWC (Alby, Coinos, Primal, ln.bot, Mutiny, Phoenix-with-NWC). For users without a wallet, prefer wallet_setup_browser.",
+  "Pair a wallet by pasting a Nostr Wallet Connect URI. Validates the URI by calling getBalance against the wallet, then writes ~/.faregate/wallet.json. Use this when the user already has a Lightning wallet that supports NWC (Alby, Coinos, Primal, ln.bot, Mutiny, Phoenix-with-NWC). For users without a wallet, prefer wallet_setup_browser.",
   {
     nwc_url: z
       .string()
@@ -805,7 +805,7 @@ server.tool(
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-log("tollgate-mcp ready");
+log("agents402-mcp ready");
 
 // Graceful shutdown closes Nostr relay connections.
 process.on("SIGINT", () => { closePool(); process.exit(0); });

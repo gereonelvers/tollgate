@@ -24,7 +24,8 @@ const DEFAULT_RELAYS = [
 ];
 
 export function getRelays(): string[] {
-  const override = process.env.TOLLGATE_NOSTR_RELAYS;
+  const override =
+    process.env.FAREGATE_NOSTR_RELAYS || process.env.TOLLGATE_NOSTR_RELAYS;
   if (override && override.trim().length > 0) {
     return override
       .split(",")
@@ -40,8 +41,18 @@ export function getRelays(): string[] {
 
 let cached: { secretKey: Uint8Array; publicKey: string } | null = null;
 
+function resolveDataDir(): string {
+  const explicit = process.env.FAREGATE_DATA_DIR || process.env.TOLLGATE_DATA_DIR;
+  if (explicit) return explicit;
+  const home = os.homedir();
+  const newPath = path.join(home, ".faregate");
+  const oldPath = path.join(home, ".tollgate");
+  if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) return oldPath;
+  return newPath;
+}
+
 function keyPath(): string {
-  const dir = process.env.TOLLGATE_DATA_DIR || path.join(os.homedir(), ".tollgate");
+  const dir = resolveDataDir();
   fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, "agent_nostr.sk");
 }

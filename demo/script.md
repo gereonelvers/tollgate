@@ -2,7 +2,7 @@
 
 Open three windows side by side:
 1. **Browser** — http://localhost:3000/dashboard (live feed)
-2. **Claude Code** — running in `tollgate/` directory
+2. **Claude Code** — running in the repo directory
 3. **Terminal** — for the legacy-fallback contrast
 
 ## 0. Setup (off-screen, before recording)
@@ -12,7 +12,7 @@ Open three windows side by side:
 cd apps/publisher && npm run dev
 
 # Reset spend history so the demo starts clean
-rm -f apps/publisher/data/tollgate.db ~/.tollgate/agent.db
+rm -f apps/publisher/data/faregate.db apps/publisher/data/tollgate.db ~/.faregate/agent.db ~/.tollgate/agent.db
 ```
 
 Confirm the dashboard shows "no paid actions yet" and "stream live."
@@ -27,7 +27,7 @@ Show http://localhost:3000 (landing).
 
 In Claude Code:
 
-> Look up Tollgate actions on http://localhost:3000.
+> Look up Faregate actions on http://localhost:3000.
 
 Claude calls `discover`. Output shows two actions: `ask.site_agent` (3 sats) and `extract.structured` (1 sat), plus the service's signed identity.
 
@@ -95,8 +95,8 @@ Total bitcoin moved: well under 2 cents.
 
 - [ ] Publisher running on `localhost:3000`
 - [ ] Dashboard open in browser, "stream live" green
-- [ ] `~/.tollgate/agent.db` and `apps/publisher/data/tollgate.db` deleted
+- [ ] `~/.faregate/agent.db` and `apps/publisher/data/faregate.db` deleted (also clean any legacy `~/.tollgate/`, `tollgate.db`)
 - [ ] Alby wallet has at least 1000 msats balance
 - [ ] `AGENT_NWC_URL` exported in Claude Code's environment
-- [ ] `~/.tollgate/policy.json` set to `max_per_action_msats: 10000` (so demo step 5 actually refuses)
+- [ ] `~/.faregate/policy.json` set to `max_per_action_msats: 10000` (so demo step 5 actually refuses)
 - [ ] Browser zoom set so dashboard fits — feed + receipts both visible

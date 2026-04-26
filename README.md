@@ -1,8 +1,8 @@
-# Tollgate
+# Faregate
 
 **Paid actions for the agent web, settled instantly over Lightning.**
 
-Tollgate is a small protocol + tooling for letting AI agents discover and buy fine-grained capabilities from websites — page access, structured extraction, site-agent answers, human verification — for sub-cent prices over the Lightning Network. Every paid action produces a portable, signed receipt.
+Faregate is the reference implementation of the [**agents402**](https://agents402.org) (A402) paid-action protocol — a small primitive for letting AI agents discover and buy fine-grained capabilities from websites — page access, structured extraction, site-agent answers, human verification — for sub-cent prices over the Lightning Network. Every paid action produces a portable, signed receipt.
 
 Built for [Hack-Nation × Spiral](https://spiral.xyz) "Earn in the Agent Economy" challenge, 2026.
 
@@ -13,7 +13,7 @@ tollgate/
 ├── apps/publisher/          Next.js demo publisher: manifest, paid actions, dashboard, landing
 ├── apps/verifier/           Tiny second paid service for the agent-to-agent demo (single Node.js file)
 ├── mcp/tollgate-mcp/        TypeScript MCP server: discover, pay_and_invoke, spend_summary
-├── skill/tollgate/          Claude Skill teaching when/how to use the MCP tools
+├── skill/faregate/          Claude Skill teaching when/how to use the MCP tools
 ├── scripts/test-flow.mjs    Standalone end-to-end smoke test (no Claude required)
 ├── .mcp.json                MCP server config (auto-loaded by Claude Code from project root)
 └── policy.example.json      Example agent spending policy
@@ -35,7 +35,7 @@ A site declares what it sells in a JSON file at `/.well-known/agents402.json`:
 }
 ```
 
-An agent (Claude Code with the Tollgate Skill loaded) sees a URL, calls the `discover` tool, picks an action, and hands off to `pay_and_invoke`. The MCP server:
+An agent (Claude Code with the Faregate Skill loaded) sees a URL, calls the `discover` tool, picks an action, and hands off to `pay_and_invoke`. The MCP server:
 
 1. Fetches the action endpoint → gets `402 Payment Required` + L402 invoice.
 2. Checks deterministic policy (daily budget, per-action max, allowed action types).
@@ -103,11 +103,11 @@ npm run dev
 
 #### Mock mode (no real Lightning required)
 
-For UI iteration or when your wallet provider is having a bad day, set `TOLLGATE_MOCK_LIGHTNING=1` and the publisher uses synthetic invoices that an in-process settle endpoint can mark paid. The dashboard shows a `MOCK LIGHTNING` badge so it's never confused with a real demo. To run end-to-end without sats:
+For UI iteration or when your wallet provider is having a bad day, set `FAREGATE_MOCK_LIGHTNING=1` and the publisher uses synthetic invoices that an in-process settle endpoint can mark paid. The dashboard shows a `MOCK LIGHTNING` badge so it's never confused with a real demo. To run end-to-end without sats:
 
 ```bash
-TOLLGATE_MOCK_LIGHTNING=1 npm run dev
-TOLLGATE_MOCK_LIGHTNING=1 node scripts/test-flow.mjs
+FAREGATE_MOCK_LIGHTNING=1 npm run dev
+FAREGATE_MOCK_LIGHTNING=1 node scripts/test-flow.mjs
 ```
 
 Flip the env var off and you're back on real mainnet.
@@ -125,27 +125,27 @@ The verifier exposes one paid action (`verify.claim` at 5 sats) and is a standal
 
 ### 4. Use Claude Code with the MCP server
 
-Start Claude Code from the `tollgate/` directory. It will auto-load `.mcp.json` and the Tollgate skill (after one-time copy below).
+Start Claude Code from the `tollgate/` directory. It will auto-load `.mcp.json` and the Faregate skill (after one-time copy below).
 
 To register the skill globally:
 
 ```bash
-mkdir -p ~/.claude/skills/tollgate
-cp -r skill/tollgate/* ~/.claude/skills/tollgate/
+mkdir -p ~/.claude/skills/faregate
+cp -r skill/faregate/* ~/.claude/skills/faregate/
 ```
 
 Or add to your project's `.claude/skills/`:
 
 ```bash
 mkdir -p .claude/skills
-cp -r skill/tollgate .claude/skills/
+cp -r skill/faregate .claude/skills/faregate
 ```
 
 To customize policy:
 
 ```bash
-mkdir -p ~/.tollgate
-cp policy.example.json ~/.tollgate/policy.json
+mkdir -p ~/.faregate
+cp policy.example.json ~/.faregate/policy.json
 # edit as desired
 ```
 
@@ -153,7 +153,7 @@ cp policy.example.json ~/.tollgate/policy.json
 
 In Claude Code:
 
-> Use Tollgate on http://localhost:3000 to ask the site agent why micropayments now make sense for agents but never did for humans. Budget: 10 sats.
+> Use Faregate on http://localhost:3000 to ask the site agent why micropayments now make sense for agents but never did for humans. Budget: 10 sats.
 
 Watch `/dashboard` light up in real time as the request hits, the 402 challenge fires, the payment lands, and the receipt drops.
 
@@ -182,7 +182,7 @@ The token binds `(payment_hash, scope, expiry)` under HMAC. Verification is pure
 
 ## Policy
 
-The MCP server enforces a deterministic policy file (default at `~/.tollgate/policy.json`, override with `TOLLGATE_POLICY_PATH`). Decisions are made before payment:
+The MCP server enforces a deterministic policy file (default at `~/.faregate/policy.json`, override with `FAREGATE_POLICY_PATH` — the legacy `~/.tollgate/` and `TOLLGATE_POLICY_PATH` are read as fallbacks). Decisions are made before payment:
 
 - `daily_budget_msats` — total spend cap per day
 - `max_per_action_msats` — refuse anything over this amount, regardless of budget
@@ -211,7 +211,7 @@ Every paid action produces a JSON receipt signed by the publisher's ed25519 serv
 }
 ```
 
-These receipts compose: future versions of this protocol can publish them as Nostr events for portable, decentralized reputation. The current MVP stores them locally on both sides — agent in `~/.tollgate/agent.db`, publisher in `apps/publisher/data/tollgate.db`.
+These receipts compose: future versions of this protocol can publish them as Nostr events for portable, decentralized reputation. The current MVP stores them locally on both sides — agent in `~/.faregate/agent.db`, publisher in `apps/publisher/data/faregate.db`.
 
 ## Demo
 

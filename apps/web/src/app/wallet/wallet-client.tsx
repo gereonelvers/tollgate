@@ -443,12 +443,12 @@ function McpConfig({
     : "(not used for this wallet provider)";
   const config = {
     mcpServers: {
-      tollgate: {
-        command: "node",
-        args: ["/path/to/tollgate-mcp/dist/index.js"],
+      faregate: {
+        command: "npx",
+        args: ["-y", "@agents402/mcp"],
         env: {
           AGENT_NWC_URL: nwcDisplay,
-          ...(wallet.provider === "dev-fake" ? { TOLLGATE_MOCK_LIGHTNING: "1" } : {}),
+          ...(wallet.provider === "dev-fake" ? { FAREGATE_MOCK_LIGHTNING: "1" } : {}),
         },
       },
     },
@@ -472,12 +472,12 @@ function McpConfig({
             onClick={() => {
               const c = {
                 mcpServers: {
-                  tollgate: {
-                    command: "node",
-                    args: ["/path/to/tollgate-mcp/dist/index.js"],
+                  faregate: {
+                    command: "npx",
+                    args: ["-y", "@agents402/mcp"],
                     env: {
                       AGENT_NWC_URL: wallet.nwc_url ?? "",
-                      ...(wallet.provider === "dev-fake" ? { TOLLGATE_MOCK_LIGHTNING: "1" } : {}),
+                      ...(wallet.provider === "dev-fake" ? { FAREGATE_MOCK_LIGHTNING: "1" } : {}),
                     },
                   },
                 },
@@ -496,7 +496,7 @@ function McpConfig({
       <div className="border-t border-[var(--code-line)] px-5 py-3 font-mono text-[11px] text-zinc-500">
         {isNwc
           ? "Anyone with the AGENT_NWC_URL can spend up to its budget. Treat the copied config as a secret."
-          : "Demo mode uses TOLLGATE_MOCK_LIGHTNING=1; replace path with your installed tollgate-mcp binary."}
+          : "Demo mode uses FAREGATE_MOCK_LIGHTNING=1; the npx command resolves the latest @agents402/mcp from npm on first run."}
       </div>
     </div>
   );

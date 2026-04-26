@@ -40,7 +40,7 @@ export default function Page() {
           [<>Reject reused (consumed) tokens with 401.</>, "MUST"],
           [<>Sign every receipt with the manifest&apos;s declared service key.</>, "MUST"],
           [<>Emit receipts using canonical JSON for the signed payload (alphabetical key order, absent optionals omitted).</>, "MUST"],
-          [<>Accept and persist <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode> when supplied; include in the canonical receipt.</>, "SHOULD"],
+          [<>Accept and persist <InlineCode>X-Agents402-Buyer-Pubkey</InlineCode> when supplied; include in the canonical receipt.</>, "SHOULD"],
           [<>Return 425 (not 402) when payment is in flight but not yet confirmed.</>, "SHOULD"],
           [<>Refund unconfirmed payments after the token expiry passes.</>, "SHOULD"],
         ]}
@@ -58,7 +58,7 @@ export default function Page() {
           [<>Surface <InlineCode>policy_needs_human_approval</InlineCode> to the user before proceeding.</>, "MUST"],
           [<>Cache manifests with respect to <InlineCode>Cache-Control</InlineCode>.</>, "SHOULD"],
           [<>Persist receipts long enough to feed the agent&apos;s local reputation system.</>, "SHOULD"],
-          [<>For reputation-tier conformance: send <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode> on every paid request and verify Nostr feedback events end-to-end (Nostr sig + receipt sig + buyer match) before counting.</>, "SHOULD"],
+          [<>For reputation-tier conformance: send <InlineCode>X-Agents402-Buyer-Pubkey</InlineCode> on every paid request and verify Nostr feedback events end-to-end (Nostr sig + receipt sig + buyer match) before counting.</>, "SHOULD"],
         ]}
       />
 
@@ -102,7 +102,7 @@ npx agents402 conform https://example.com --version 0.1`}
           [
             <InlineCode key="b3">agents402-reputation</InlineCode>,
             <span key="b3d">
-              Above + accepts the optional <InlineCode>X-Tollgate-Buyer-Pubkey</InlineCode>{" "}
+              Above + accepts the optional <InlineCode>X-Agents402-Buyer-Pubkey</InlineCode>{" "}
               header and includes the supplied pubkey in the receipt&apos;s canonical
               fields. Required to enable verifiable Nostr feedback events from buyers.
             </span>,

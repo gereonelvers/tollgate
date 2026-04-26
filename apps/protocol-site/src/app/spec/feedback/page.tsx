@@ -197,14 +197,14 @@ export default function Page() {
       </Callout>
 
       <H2 id="relays">Relay selection</H2>
-      <P>Reference set used by the Tollgate MCP server:</P>
+      <P>Reference set used by the Faregate MCP server:</P>
       <CodeBlock lang="text">
 {`wss://relay.damus.io
 wss://nos.lol
 wss://relay.primal.net`}
       </CodeBlock>
       <P>
-        Override via the <InlineCode>TOLLGATE_NOSTR_RELAYS</InlineCode> environment
+        Override via the <InlineCode>FAREGATE_NOSTR_RELAYS</InlineCode> environment
         variable (comma-separated). Agents SHOULD publish to at least 3 relays for
         redundancy and SHOULD subscribe to at least the same 3 when fetching reputation.
       </P>

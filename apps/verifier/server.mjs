@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Tollgate verifier — a tiny second paid service for agent-to-agent demos.
+ * Faregate verifier — a tiny second paid service for agent-to-agent demos.
  *
  * Exposes:
  *   GET  /.well-known/agents402.json       — manifest (one action)
@@ -203,7 +203,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, {
         version: "0.1",
         service: {
-          name: "Tollgate Verifier",
+          name: "Faregate Verifier",
           description: "A second paid service that grades claims for agents. Use it to fact-check answers from other services.",
           homepage: BASE,
         },
@@ -225,7 +225,7 @@ const server = http.createServer(async (req, res) => {
         try {
           invoice = await getWallet().makeInvoice({
             amount: PRICE_MSATS,
-            description: `tollgate-verifier:verify.claim`,
+            description: `faregate-verifier:verify.claim`,
             expiry: 900,
           });
         } catch (e) {
@@ -294,7 +294,7 @@ const server = http.createServer(async (req, res) => {
       const out = evaluateClaim(body.claim);
 
       // Optional buyer pubkey for verifiable Nostr feedback later.
-      const buyerHeader = req.headers["x-tollgate-buyer-pubkey"];
+      const buyerHeader = req.headers["x-agents402-buyer-pubkey"];
       const buyer_pubkey =
         typeof buyerHeader === "string" && /^[0-9a-f]{64}$/i.test(buyerHeader.trim())
           ? buyerHeader.trim().toLowerCase()
@@ -336,7 +336,7 @@ const server = http.createServer(async (req, res) => {
       return send(
         res,
         200,
-        "<!doctype html><meta charset=utf-8><title>Tollgate Verifier</title><body style=\"font-family:ui-monospace,monospace;background:#0a0a0f;color:#fafafa;padding:48px;max-width:720px;margin:auto\"><h1 style=\"color:#fbbf24\">tollgate verifier</h1><p>A second paid service for the agent economy demo. Run by an entity that's not the publisher. Pay 5 sats per <code>verify.claim</code> request.</p><p><a style=\"color:#fbbf24\" href=\"/.well-known/agents402.json\">manifest</a> · <a style=\"color:#fbbf24\" href=\"/api/receipts\">receipts</a></p></body>",
+        "<!doctype html><meta charset=utf-8><title>Faregate Verifier</title><body style=\"font-family:ui-monospace,monospace;background:#0a0a0f;color:#fafafa;padding:48px;max-width:720px;margin:auto\"><h1 style=\"color:#fbbf24\">faregate verifier</h1><p>A second paid service for the agent economy demo. Run by an entity that's not the publisher. Pay 5 sats per <code>verify.claim</code> request.</p><p><a style=\"color:#fbbf24\" href=\"/.well-known/agents402.json\">manifest</a> · <a style=\"color:#fbbf24\" href=\"/api/receipts\">receipts</a></p></body>",
         { "content-type": "text/html; charset=utf-8" },
       );
     }
@@ -347,7 +347,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  process.stdout.write(`tollgate-verifier listening on ${BASE}\n`);
+  process.stdout.write(`faregate-verifier listening on ${BASE}\n`);
   process.stdout.write(`  manifest: ${BASE}/.well-known/agents402.json\n`);
   process.stdout.write(`  action:   ${BASE}/api/actions/verify.claim (${PRICE_MSATS} msats)\n`);
 });

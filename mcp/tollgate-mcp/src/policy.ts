@@ -49,10 +49,21 @@ export type Policy = z.infer<typeof PolicySchema>;
 
 const DEFAULT_POLICY: Policy = PolicySchema.parse({});
 
+function resolveDataDir(): string {
+  const explicit = process.env.FAREGATE_DATA_DIR || process.env.TOLLGATE_DATA_DIR;
+  if (explicit) return explicit;
+  const home = os.homedir();
+  const newPath = path.join(home, ".faregate");
+  const oldPath = path.join(home, ".tollgate");
+  if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) return oldPath;
+  return newPath;
+}
+
 export function policyPath(): string {
   return (
+    process.env.FAREGATE_POLICY_PATH ||
     process.env.TOLLGATE_POLICY_PATH ||
-    path.join(os.homedir(), ".tollgate", "policy.json")
+    path.join(resolveDataDir(), "policy.json")
   );
 }
 

@@ -2,13 +2,13 @@
 
 ## Discover-first
 
-> Look up tollgate paid actions on http://localhost:3000 and tell me what's available.
+> Look up faregate paid actions on http://localhost:3000 and tell me what's available.
 
 Expected: Claude calls `discover`, returns a list of actions with prices. No spending.
 
 ## Cheap structured extract
 
-> Use Tollgate to extract structured data for doc.lightning_economics_2026 from http://localhost:3000. Budget: 5 sats.
+> Use Faregate to extract structured data for doc.lightning_economics_2026 from http://localhost:3000. Budget: 5 sats.
 
 Expected: Claude calls `discover`, picks `extract.structured` (1 sat), calls `pay_and_invoke`. Returns the structured doc + receipt id. Spend trail in reply.
 
@@ -38,6 +38,6 @@ Expected: `pay_and_invoke` returns `policy_deny` because either per-action max o
 
 ## Budget question
 
-> How much have I spent on Lightning this week through Tollgate?
+> How much have I spent on Lightning this week through Faregate?
 
 Expected: Claude calls `spend_summary` with period=week and reports the breakdown.

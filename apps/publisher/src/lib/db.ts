@@ -8,7 +8,11 @@ export function getDb() {
   if (db) return db;
   const dir = path.join(process.cwd(), "data");
   fs.mkdirSync(dir, { recursive: true });
-  db = new Database(path.join(dir, "tollgate.db"));
+  const newDb = path.join(dir, "faregate.db");
+  const oldDb = path.join(dir, "tollgate.db");
+  // Keep using the legacy file if it exists (preserves prior receipts).
+  const dbFile = !fs.existsSync(newDb) && fs.existsSync(oldDb) ? oldDb : newDb;
+  db = new Database(dbFile);
   db.pragma("journal_mode = WAL");
   db.exec(`
     CREATE TABLE IF NOT EXISTS receipts (

@@ -1,6 +1,6 @@
 # @agents402/mcp
 
-An MCP server that lets your AI agent pay for [L402](https://docs.lightning.engineering/the-lightning-network/l402) paid actions over Lightning, with deterministic spend policy, decentralized reputation, and in-band wallet setup.
+An MCP server that lets your AI agent pay for [L402](https://docs.lightning.engineering/the-lightning-network/l402) paid actions over Lightning, with deterministic spend policy, decentralized reputation, and in-band wallet setup. The reference implementation of the [agents402](https://agents402.org) protocol, by [Faregate](https://faregate.org).
 
 ## Install
 
@@ -9,7 +9,7 @@ In your MCP client config (e.g. `~/.config/claude/claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "agents402": {
+    "faregate": {
       "command": "npx",
       "args": ["-y", "@agents402/mcp"]
     }
@@ -38,22 +38,24 @@ That's it. No wallet pre-configuration required — the first time the agent hit
 
 When `pay_and_invoke` is called without a wallet, it returns a structured `needs_setup` response listing the two paths. The agent presents these to the user and calls one of:
 
-- **`wallet_setup_nwc({ nwc_url, label? })`** — User pastes a `nostr+walletconnect://` URI. The MCP validates it by calling `getBalance` and saves to `~/.tollgate/wallet.json`.
+- **`wallet_setup_nwc({ nwc_url, label? })`** — User pastes a `nostr+walletconnect://` URI. The MCP validates it by calling `getBalance` and saves to `~/.faregate/wallet.json`.
 - **`wallet_setup_browser()`** — MCP binds a random `127.0.0.1` port, opens the browser to `wallet.faregate.org/setup/new?callback=…&state=…`, and the page POSTs the new wallet config to the listener once the user finishes the flow. Then `wallet_setup_check` confirms.
 
 In both cases the user holds the keys. The MCP never transmits the wallet config off-machine.
 
 ## Spend policy
 
-Read from `~/.tollgate/policy.json`. Refusals happen in code, not in the model — if a call would breach `daily_budget_msats`, `per_action_max_msats`, allowed action types, trusted domains, or network-reputation gates, `pay_and_invoke` refuses before any payment.
+Read from `~/.faregate/policy.json`. Refusals happen in code, not in the model — if a call would breach `daily_budget_msats`, `per_action_max_msats`, allowed action types, trusted domains, or network-reputation gates, `pay_and_invoke` refuses before any payment.
 
 ## Environment
 
 | Var | Default | Purpose |
 | --- | --- | --- |
-| `TOLLGATE_DATA_DIR` | `~/.tollgate` | Where `wallet.json`, `policy.json`, `agent.db` live. |
+| `FAREGATE_DATA_DIR` | `~/.faregate` | Where `wallet.json`, `policy.json`, `agent.db` live. (`TOLLGATE_DATA_DIR` and `~/.tollgate/` are read as fallbacks for users who set up before the rename.) |
+| `FAREGATE_POLICY_PATH` | `<data_dir>/policy.json` | Override the policy file path. |
 | `AGENTS402_WEB_URL` | `https://wallet.faregate.org` | Web app to open for browser pairing. |
 | `AGENT_NWC_URL` | — | Legacy fallback if no `wallet.json` is present. |
+| `FAREGATE_NOSTR_RELAYS` | (built-in set) | Comma-separated relay URLs for reputation publish/fetch. |
 
 ## Source
 

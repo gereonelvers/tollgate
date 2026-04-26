@@ -10,9 +10,10 @@ import { NWCClient } from "@getalby/sdk";
  * Wallet config the MCP server uses to pay/receive on the agent's behalf.
  *
  * Loaded in this order:
- *   1. ~/.tollgate/wallet.json (or $TOLLGATE_DATA_DIR/wallet.json) — written
+ *   1. ~/.faregate/wallet.json (or $FAREGATE_DATA_DIR/wallet.json) — written
  *      by an in-band setup tool (`wallet_setup_nwc`, `wallet_setup_browser`)
- *      or by `npx @agents402/setup`.
+ *      or by `npx @agents402/setup`. Falls back to ~/.tollgate/wallet.json
+ *      if present (legacy path), and TOLLGATE_DATA_DIR for legacy env.
  *   2. AGENT_NWC_URL env var — backward-compat path for users who set up
  *      manually before the in-band flow existed.
  *
@@ -40,7 +41,13 @@ let sparkPromise: Promise<unknown> | null = null;
 let devFakeBalanceMsats = 100_000;
 
 function dataDir(): string {
-  return process.env.TOLLGATE_DATA_DIR || path.join(os.homedir(), ".tollgate");
+  const explicit = process.env.FAREGATE_DATA_DIR || process.env.TOLLGATE_DATA_DIR;
+  if (explicit) return explicit;
+  const home = os.homedir();
+  const newPath = path.join(home, ".faregate");
+  const oldPath = path.join(home, ".tollgate");
+  if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) return oldPath;
+  return newPath;
 }
 function configPath(): string {
   return path.join(dataDir(), "wallet.json");

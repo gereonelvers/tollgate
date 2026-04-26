@@ -8,7 +8,7 @@
  *   2. Opens the browser to <web>/setup/new?callback=<localhost>&state=<random>
  *   3. After the user creates a wallet and confirms backup, the web page POSTs
  *      the wallet config to the localhost callback.
- *   4. We write it to ~/.tollgate/wallet.json and exit.
+ *   4. We write it to ~/.faregate/wallet.json and exit.
  *
  * The web origin and the localhost CLI never store the data anywhere else.
  * State token + Origin check guard against random-tab CSRF.
@@ -37,9 +37,17 @@ const WEB_URL = process.env.AGENTS402_WEB_URL || DEFAULT_WEB_URL;
 const TIMEOUT_MS = Number(process.env.AGENTS402_SETUP_TIMEOUT_MS ?? 5 * 60 * 1000);
 const PORT = Number(process.env.AGENTS402_SETUP_PORT ?? 0);
 
-const tollgateDir =
-  process.env.TOLLGATE_DATA_DIR || path.join(os.homedir(), ".tollgate");
-const walletFile = path.join(tollgateDir, "wallet.json");
+function resolveDataDir(): string {
+  const explicit = process.env.FAREGATE_DATA_DIR || process.env.TOLLGATE_DATA_DIR;
+  if (explicit) return explicit;
+  const home = os.homedir();
+  const newPath = path.join(home, ".faregate");
+  const oldPath = path.join(home, ".tollgate");
+  if (fs.existsSync(oldPath) && !fs.existsSync(newPath)) return oldPath;
+  return newPath;
+}
+const faregateDir = resolveDataDir();
+const walletFile = path.join(faregateDir, "wallet.json");
 
 const STATE = crypto.randomBytes(16).toString("hex");
 
@@ -70,7 +78,7 @@ const PAGE_DONE = `<!doctype html>
   code { background: #ececec; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
 </style>
 <h1>✓ Wallet linked.</h1>
-<p>Your wallet config has been written to <code>~/.tollgate/wallet.json</code>.</p>
+<p>Your wallet config has been written to <code>~/.faregate/wallet.json</code>.</p>
 <p>Return to your terminal — the setup CLI will exit on its own. You can close this tab.</p>
 `;
 const PAGE_ERR = (msg: string) => `<!doctype html>
@@ -126,7 +134,7 @@ function startServer(): Promise<{ port: number; ready: Promise<void> }> {
               if (!cfg.provider) {
                 throw new Error("missing 'provider'");
               }
-              fs.mkdirSync(tollgateDir, { recursive: true });
+              fs.mkdirSync(faregateDir, { recursive: true });
               fs.writeFileSync(walletFile, JSON.stringify(cfg, null, 2), { mode: 0o600 });
               res.writeHead(200, { "content-type": "text/html", ...corsHeaders(origin) });
               res.end(PAGE_DONE);

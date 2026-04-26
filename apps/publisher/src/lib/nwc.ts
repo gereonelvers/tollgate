@@ -1,20 +1,22 @@
 import crypto from "node:crypto";
 import { NWCClient } from "@getalby/sdk";
 
-const MOCK_MODE = process.env.TOLLGATE_MOCK_LIGHTNING === "1";
+const MOCK_MODE =
+  process.env.FAREGATE_MOCK_LIGHTNING === "1" ||
+  process.env.TOLLGATE_MOCK_LIGHTNING === "1";
 
 // In Next.js dev, module-level singletons can get stale because the WebSocket
 // connection underlying NWC may be dropped between request handlers. We cache
 // on globalThis so HMR doesn't blow it away, and we recover on connection error.
 declare global {
   // eslint-disable-next-line no-var
-  var __tollgatePublisherWallet: NWCClient | undefined;
+  var __faregatePublisherWallet: NWCClient | undefined;
   // eslint-disable-next-line no-var
-  var __tollgateSettledHashes: Set<string> | undefined;
+  var __faregateSettledHashes: Set<string> | undefined;
   // eslint-disable-next-line no-var
-  var __tollgateNotifSubscribed: boolean | undefined;
+  var __faregateNotifSubscribed: boolean | undefined;
   // eslint-disable-next-line no-var
-  var __tollgateMockInvoices: Map<string, { amount_msats: number; settled: boolean }> | undefined;
+  var __faregateMockInvoices: Map<string, { amount_msats: number; settled: boolean }> | undefined;
 }
 
 function newClient(): NWCClient {
@@ -24,17 +26,17 @@ function newClient(): NWCClient {
 }
 
 function getClient(): NWCClient {
-  if (!globalThis.__tollgatePublisherWallet) {
-    globalThis.__tollgatePublisherWallet = newClient();
+  if (!globalThis.__faregatePublisherWallet) {
+    globalThis.__faregatePublisherWallet = newClient();
   }
-  return globalThis.__tollgatePublisherWallet;
+  return globalThis.__faregatePublisherWallet;
 }
 
 function getSettledSet(): Set<string> {
-  if (!globalThis.__tollgateSettledHashes) {
-    globalThis.__tollgateSettledHashes = new Set();
+  if (!globalThis.__faregateSettledHashes) {
+    globalThis.__faregateSettledHashes = new Set();
   }
-  return globalThis.__tollgateSettledHashes;
+  return globalThis.__faregateSettledHashes;
 }
 
 /**
@@ -43,8 +45,8 @@ function getSettledSet(): Set<string> {
  * verify path is just a Set.has() check — no per-request NWC roundtrip.
  */
 function ensureNotifSubscription() {
-  if (globalThis.__tollgateNotifSubscribed) return;
-  globalThis.__tollgateNotifSubscribed = true;
+  if (globalThis.__faregateNotifSubscribed) return;
+  globalThis.__faregateNotifSubscribed = true;
   const wallet = getClient();
   // @getalby/sdk exposes subscribeNotifications(callback, types?)
   wallet
@@ -66,7 +68,7 @@ function ensureNotifSubscription() {
       process.stderr.write(
         `nwc subscribeNotifications failed: ${e instanceof Error ? e.message : String(e)}\n`,
       );
-      globalThis.__tollgateNotifSubscribed = false;
+      globalThis.__faregateNotifSubscribed = false;
     });
 }
 
@@ -78,10 +80,10 @@ export type LightningInvoice = {
 };
 
 function getMockInvoices(): Map<string, { amount_msats: number; settled: boolean }> {
-  if (!globalThis.__tollgateMockInvoices) {
-    globalThis.__tollgateMockInvoices = new Map();
+  if (!globalThis.__faregateMockInvoices) {
+    globalThis.__faregateMockInvoices = new Map();
   }
-  return globalThis.__tollgateMockInvoices;
+  return globalThis.__faregateMockInvoices;
 }
 
 export async function createInvoice(opts: {
@@ -116,7 +118,7 @@ export async function createInvoice(opts: {
   try {
     result = await tryOnce();
   } catch (e) {
-    globalThis.__tollgatePublisherWallet = undefined;
+    globalThis.__faregatePublisherWallet = undefined;
     process.stderr.write(
       `makeInvoice retry after error: ${e instanceof Error ? e.message : String(e)}\n`,
     );

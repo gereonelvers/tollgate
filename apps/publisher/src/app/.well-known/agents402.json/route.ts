@@ -12,9 +12,9 @@ export function GET() {
   const manifest: Manifest = {
     version: "0.1",
     service: {
-      name: "Tollgate Demo Publisher",
+      name: "The Halving Gazette",
       description:
-        "A demo publication exposing paid AI-agent actions over Lightning. Visit the dashboard to watch sats move in real time.",
+        "A demo publication exposing paid AI-agent actions over Lightning. All the news that's small enough to settle on a single block. Visit the dashboard to watch sats arrive.",
       homepage,
       lightning_address: process.env.PUBLISHER_LIGHTNING_ADDRESS,
     },
