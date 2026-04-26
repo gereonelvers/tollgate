@@ -1,0 +1,33 @@
+{
+  "name": "@agents402/wallet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./backends/dev-fake": {
+      "types": "./dist/backends/dev-fake.d.ts",
+      "import": "./dist/backends/dev-fake.js"
+    },
+    "./backends/nwc": {
+      "types": "./dist/backends/nwc.d.ts",
+      "import": "./dist/backends/nwc.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "dev": "tsc -p . --watch"
+  },
+  "dependencies": {
+    "@agents402/core": "file:../core",
+    "@getalby/sdk": "^7.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
