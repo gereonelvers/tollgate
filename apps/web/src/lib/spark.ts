@@ -168,10 +168,21 @@ export async function getSparkHistory(stored: StoredWallet, limit = 20): Promise
       createdTime?: Date | string;
       status?: string;
       type?: string;
-      userRequest?: { memo?: string; description?: string; invoice?: { memo?: string } };
+      userRequest?: {
+        memo?: string;
+        description?: string;
+        invoice?: { memo?: string };
+        // LightningSendRequest carries the SSP/routing fee separately.
+        fee?: { originalValue?: number; originalUnit?: string };
+      };
     };
     const direction = String(o.transferDirection ?? "").toUpperCase().includes("OUT") ? "out" : "in";
     const sats = typeof o.totalValue === "number" ? o.totalValue : 0;
+    // Fee only meaningful on outgoing Lightning sends; reads 0/undefined otherwise.
+    const feeSats =
+      direction === "out" && typeof o.userRequest?.fee?.originalValue === "number"
+        ? o.userRequest.fee.originalValue
+        : 0;
     const created =
       o.createdTime instanceof Date
         ? Math.floor(o.createdTime.getTime() / 1000)
@@ -194,6 +205,7 @@ export async function getSparkHistory(stored: StoredWallet, limit = 20): Promise
       id: String(o.id ?? `tx-${created}-${sats}`),
       direction,
       amount_msats: sats * 1000,
+      fees_msats: feeSats > 0 ? feeSats * 1000 : undefined,
       description: typeof memo === "string" && memo.trim() ? memo.trim() : undefined,
       created_at: created,
       state,
